@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { InteractiveGrid } from "@/components/InteractiveGrid";
 
 function NotFoundComponent() {
   return (
@@ -64,5 +65,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <>
+      <InteractiveGrid />
+      <Outlet />
+    </>
+  );
 }

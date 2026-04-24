@@ -3,7 +3,7 @@ import { Sparkles } from "lucide-react";
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/60 border-b border-border/50">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/70 border-b border-border/50">
       <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group">
           <div className="relative">
@@ -16,9 +16,16 @@ export function SiteHeader() {
             Spec<span className="text-primary">AI</span>
           </span>
         </Link>
-        <nav className="hidden sm:flex items-center gap-8 text-sm text-muted-foreground">
-          <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-          <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
+        <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
+          <Link to="/examples" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>
+            Examples
+          </Link>
+          <Link to="/pricing" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>
+            Pricing
+          </Link>
+          <Link to="/docs" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>
+            Docs
+          </Link>
         </nav>
         <Link
           to="/build"

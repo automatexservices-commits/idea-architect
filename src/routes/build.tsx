@@ -24,7 +24,7 @@ export const Route = createFileRoute("/build")({
 
 type Step = "idea" | "questions" | "stack" | "generating" | "output";
 
-type Question = { id: string; question: string; hint?: string };
+type Question = { id: string; question: string; options: string[] };
 
 type Stack = {
   frontend: string;
@@ -347,12 +347,34 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
               <span className="font-mono text-sm text-primary shrink-0">{String(i + 1).padStart(2, "0")}</span>
               <div className="flex-1">
                 <label className="block font-medium mb-3">{q.question}</label>
-                <input
-                  value={answers[q.id] || ""}
-                  onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
-                  placeholder={q.hint || "Type your answer..."}
-                  className="w-full px-3 py-2 rounded-lg bg-background border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                />
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {(q.options || []).map((opt) => {
+                    const selected = answers[q.id] === opt;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setAnswers({ ...answers, [q.id]: opt })}
+                        className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-all ${
+                          selected
+                            ? "border-primary bg-accent text-foreground glow-primary-sm"
+                            : "border-border bg-background hover:border-primary/50 hover:bg-surface"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
+                              selected ? "border-primary bg-primary" : "border-border"
+                            }`}
+                          >
+                            {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                          </span>
+                          {opt}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

@@ -40,11 +40,11 @@ export const generateQuestions = createServerFn({ method: "POST" })
         {
           role: "system",
           content:
-            "You are SpecAI, a senior product strategist. Given an app idea, ask 6-8 sharp clarifying questions that surface platform, language preference, backend, auth, scaling, and key differentiators. Be concise — one question per item, no preamble.",
+            "You are SpecAI, a senior product strategist. Given an app idea, ask 6-8 sharp multiple-choice clarifying questions that surface platform, language preference, backend, auth, scaling, and key differentiators. Each question MUST have 3-5 concrete, distinct answer options the user can pick from (no free text). Options should be short (1-6 words) and mutually exclusive. Always include a sensible 'Other / custom' style option only if truly needed.",
         },
         {
           role: "user",
-          content: `Idea: ${data.idea}\n\nAdditional specs: ${data.specs || "(none)"}\n\nReturn structured questions.`,
+          content: `Idea: ${data.idea}\n\nAdditional specs: ${data.specs || "(none)"}\n\nReturn structured multiple-choice questions.`,
         },
       ],
       [
@@ -52,7 +52,7 @@ export const generateQuestions = createServerFn({ method: "POST" })
           type: "function",
           function: {
             name: "ask_questions",
-            description: "Return 6-8 clarifying questions",
+            description: "Return 6-8 multiple-choice clarifying questions",
             parameters: {
               type: "object",
               properties: {
@@ -64,9 +64,15 @@ export const generateQuestions = createServerFn({ method: "POST" })
                     properties: {
                       id: { type: "string" },
                       question: { type: "string" },
-                      hint: { type: "string", description: "Optional placeholder/example answer" },
+                      options: {
+                        type: "array",
+                        description: "3-5 short answer choices",
+                        items: { type: "string" },
+                        minItems: 3,
+                        maxItems: 5,
+                      },
                     },
-                    required: ["id", "question"],
+                    required: ["id", "question", "options"],
                   },
                 },
               },
@@ -79,7 +85,7 @@ export const generateQuestions = createServerFn({ method: "POST" })
     );
 
     const args = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
-    return args as { projectName: string; questions: Array<{ id: string; question: string; hint?: string }> };
+    return args as { projectName: string; questions: Array<{ id: string; question: string; options: string[] }> };
   });
 
 // 2. Recommend stack

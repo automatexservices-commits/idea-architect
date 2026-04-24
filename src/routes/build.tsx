@@ -11,7 +11,8 @@ import {
   generateFolderStructure,
 } from "@/lib/specai-server.functions";
 import JSZip from "jszip";
-import { saveAs } from "file-saver";
+import fileSaver from "file-saver";
+const { saveAs } = fileSaver;
 
 export const Route = createFileRoute("/build")({
   head: () => ({

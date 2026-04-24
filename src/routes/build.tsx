@@ -375,6 +375,20 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
                     );
                   })}
                 </div>
+
+                {/* Custom answer / preference */}
+                <div className="mt-3">
+                  <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Or write your own answer / preference
+                  </label>
+                  <input
+                    type="text"
+                    value={answers[q.id] && !(q.options || []).includes(answers[q.id]) ? answers[q.id] : ""}
+                    onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+                    placeholder="Type a custom answer..."
+                    className="w-full px-3 py-2 rounded-lg bg-background border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                  />
+                </div>
               </div>
             </div>
           </div>

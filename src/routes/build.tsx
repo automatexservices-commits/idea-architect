@@ -11,8 +11,6 @@ import {
   generateFolderStructure,
 } from "@/lib/specai-server.functions";
 import JSZip from "jszip";
-import fileSaver from "file-saver";
-const { saveAs } = fileSaver;
 
 export const Route = createFileRoute("/build")({
   head: () => ({
@@ -46,6 +44,15 @@ type Docs = {
   readme: string;
   folderStructure: { root: string; tree: TreeNode[] };
 };
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 const DOC_FILES = [
   { key: "prd", name: "PRD.md", folder: "docs", label: "Product Requirements" },
@@ -165,7 +172,7 @@ function BuildPage() {
     });
 
     const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, `${slug(projectName)}.zip`);
+    downloadBlob(blob, `${slug(projectName)}.zip`);
   };
 
   return (

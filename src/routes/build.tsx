@@ -315,7 +315,7 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
         <button
           onClick={onNext}
           disabled={!idea.trim() || loading}
-          className="w-full mt-4 px-6 py-3.5 rounded-xl bg-primary text-primary-foreground font-medium glow-primary hover:scale-[1.01] transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+          className="btn-3d w-full mt-4"
         >
           {loading ? (
             <>
@@ -399,14 +399,14 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
       <div className="mt-8 flex gap-3">
         <button
           onClick={onBack}
-          className="px-5 py-3 rounded-xl border border-border hover:bg-surface transition-colors flex items-center gap-2 text-sm"
+          className="btn-3d btn-3d-outline"
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={onNext}
           disabled={loading}
-          className="flex-1 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium glow-primary-sm hover:scale-[1.01] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+          className="btn-3d flex-1"
         >
           {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Recommending stack...</> : <>Next: Pick stack <ArrowRight className="w-4 h-4" /></>}
         </button>
@@ -452,12 +452,12 @@ function StackStep({ stack, setStack, onBack, onNext }: any) {
       </div>
 
       <div className="mt-8 flex gap-3">
-        <button onClick={onBack} className="px-5 py-3 rounded-xl border border-border hover:bg-surface transition-colors flex items-center gap-2 text-sm">
+        <button onClick={onBack} className="btn-3d btn-3d-outline">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={onNext}
-          className="flex-1 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium glow-primary hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
+          className="btn-3d flex-1"
         >
           Generate documentation <ArrowRight className="w-4 h-4" />
         </button>

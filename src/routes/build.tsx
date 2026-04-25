@@ -549,22 +549,17 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
         <div className="flex gap-3">
           <button
             onClick={onRestart}
-            className="px-4 py-2.5 rounded-xl border border-border hover:bg-surface transition-colors text-sm flex items-center gap-2"
+            className="btn-3d btn-3d-sm btn-3d-outline"
           >
             <RefreshCw className="w-4 h-4" /> New project
           </button>
           <button
             onClick={onDownload}
-            className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium glow-primary-sm hover:scale-[1.02] transition-transform flex items-center gap-2"
+            className="btn-3d btn-3d-sm"
           >
             <Download className="w-4 h-4" /> Download ZIP
           </button>
         </div>
-      </div>
-
-      {/* Vibe-coding platforms — paste your ZIP straight into your favourite builder */}
-      <div className="mb-6">
-        <VibePlatforms />
       </div>
 
       <div className="grid md:grid-cols-[260px_1fr] gap-4 h-[calc(100vh-260px)] min-h-[500px]">

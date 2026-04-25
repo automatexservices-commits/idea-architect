@@ -586,6 +586,11 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
           </div>
         </div>
       </div>
+
+      {/* Vibe-coding platforms — paste your ZIP into your favourite builder */}
+      <div className="mt-8">
+        <VibePlatforms />
+      </div>
     </section>
   );
 }

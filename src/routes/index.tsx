@@ -5,9 +5,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SpecAI — From idea to production-ready spec in minutes" },
-      { name: "description", content: "SpecAI turns vague app ideas into PRDs, architecture, API specs, and design systems. Built for indie devs, vibe coders, and founders." },
-      { property: "og:title", content: "SpecAI — From idea to production-ready spec in minutes" },
+      { title: "PLANNR — From idea to production-ready spec in minutes" },
+      { name: "description", content: "PLANNR turns vague app ideas into PRDs, architecture, API specs, and design systems. Built for indie devs, vibe coders, and founders." },
+      { property: "og:title", content: "PLANNR — From idea to production-ready spec in minutes" },
       { property: "og:description", content: "Skip the tool switching. Generate PRD, SRS, architecture, design system, and API spec in one structured workflow." },
     ],
   }),
@@ -37,7 +37,7 @@ function LandingPage() {
           </h1>
 
           <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-up" style={{ animationDelay: "0.2s" }}>
-            SpecAI turns a one-line idea into a complete project package — PRD, architecture,
+            PLANNR turns a one-line idea into a complete project package — PRD, architecture,
             API spec, design system, and folder structure. Ready to build.
           </p>
 
@@ -197,7 +197,7 @@ function LandingPage() {
 
       <footer className="py-12 border-t border-border/50">
         <div className="mx-auto max-w-7xl px-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <div className="font-mono">© SpecAI · Built for vibe coders</div>
+          <div className="font-mono">© PLANNR · Built for vibe coders</div>
           <div className="flex gap-6">
             <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
             <a href="#" className="hover:text-foreground transition-colors">GitHub</a>

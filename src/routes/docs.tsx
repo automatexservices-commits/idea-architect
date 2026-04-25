@@ -5,10 +5,10 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/docs")({
   head: () => ({
     meta: [
-      { title: "Docs — SpecAI" },
-      { name: "description", content: "Learn how SpecAI structures ideas into shippable specs." },
-      { property: "og:title", content: "Docs — SpecAI" },
-      { property: "og:description", content: "Guides for getting the most out of SpecAI." },
+      { title: "Docs — PLANNR" },
+      { name: "description", content: "Learn how PLANNR structures ideas into shippable specs." },
+      { property: "og:title", content: "Docs — PLANNR" },
+      { property: "og:description", content: "Guides for getting the most out of PLANNR." },
     ],
   }),
   component: DocsPage,
@@ -18,7 +18,7 @@ const SECTIONS = [
   { icon: Lightbulb, title: "Getting Started", desc: "Your first spec in under 5 minutes.", id: "start" },
   { icon: Workflow, title: "The 5-Step Flow", desc: "Idea → Clarify → Stack → Generate → Export.", id: "flow" },
   { icon: FileText, title: "What's Generated", desc: "Each of the 7 documents and their structure.", id: "outputs" },
-  { icon: Layers, title: "Stack Recommendations", desc: "How SpecAI picks frontend, backend, DB, auth.", id: "stack" },
+  { icon: Layers, title: "Stack Recommendations", desc: "How PLANNR picks frontend, backend, DB, auth.", id: "stack" },
   { icon: Code2, title: "Using With AI Coders", desc: "Hand-off patterns for Cursor, Claude, Lovable.", id: "handoff" },
   { icon: Book, title: "FAQ", desc: "Answers to common questions.", id: "faq" },
 ];
@@ -35,7 +35,7 @@ function DocsPage() {
               Everything you need to ship a spec.
             </h1>
             <p className="mt-5 text-lg text-muted-foreground max-w-2xl">
-              Concise guides on each part of the SpecAI workflow.
+              Concise guides on each part of the PLANNR workflow.
             </p>
           </div>
         </section>
@@ -63,7 +63,7 @@ function DocsPage() {
         <section className="py-10 border-t border-border/50">
           <div className="mx-auto max-w-3xl px-6 space-y-14">
             <Block id="start" title="Getting Started">
-              Type a one-liner. Anything from "AI tool for chefs" to a multi-paragraph brief. SpecAI parses it,
+              Type a one-liner. Anything from "AI tool for chefs" to a multi-paragraph brief. PLANNR parses it,
               extracts a working project name, and queues 6–8 clarifying questions. No account required to try.
             </Block>
             <Block id="flow" title="The 5-Step Flow">
@@ -87,7 +87,7 @@ function DocsPage() {
               </ul>
             </Block>
             <Block id="stack" title="Stack Recommendations">
-              SpecAI weighs your answers (scale, team size, platform, AI features) and recommends a coherent stack.
+              PLANNR weighs your answers (scale, team size, platform, AI features) and recommends a coherent stack.
               Override anything — your changes flow into every downstream doc.
             </Block>
             <Block id="handoff" title="Using With AI Coders">
@@ -95,7 +95,7 @@ function DocsPage() {
               read README.md and PRD.md first — that's by design. Folder structure gives them scaffold targets.
             </Block>
             <Block id="faq" title="FAQ">
-              <p className="text-sm"><b>Does SpecAI write code?</b> No. It produces the planning artifacts your AI coder needs.</p>
+              <p className="text-sm"><b>Does PLANNR write code?</b> No. It produces the planning artifacts your AI coder needs.</p>
               <p className="text-sm mt-2"><b>Can I edit the docs?</b> Yes — they're plain markdown.</p>
               <p className="text-sm mt-2"><b>Is my idea stored?</b> Specs are saved to your account. Delete anytime.</p>
             </Block>

@@ -1,20 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
+import plannrLogo from "@/assets/plannr-logo.png";
 
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/70 border-b border-border/50">
-      <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary blur-md opacity-50 group-hover:opacity-80 transition-opacity" />
-            <div className="relative w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
-            </div>
-          </div>
-          <span className="font-display font-bold text-lg tracking-tight">
-            Spec<span className="text-primary">AI</span>
-          </span>
+      <div className="mx-auto max-w-7xl px-6 h-20 flex items-center justify-between">
+        <Link to="/" className="flex items-center group" aria-label="PLANNR home">
+          <img
+            src={plannrLogo}
+            alt="PLANNR"
+            className="h-14 md:h-16 w-auto object-contain transition-transform group-hover:scale-[1.03] drop-shadow-[0_0_18px_oklch(0.78_0.27_145/0.45)]"
+          />
         </Link>
         <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
           <Link to="/examples" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>

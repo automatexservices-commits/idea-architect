@@ -15,7 +15,7 @@ import JSZip from "jszip";
 export const Route = createFileRoute("/build")({
   head: () => ({
     meta: [
-      { title: "Build your spec — SpecAI" },
+      { title: "Build your spec — PLANNR" },
       { name: "description", content: "Turn your idea into a complete project specification with AI-guided clarification, stack recommendations, and structured docs." },
     ],
   }),
@@ -337,7 +337,7 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
       <div className="mb-8">
         <div className="text-xs font-mono uppercase tracking-wider text-primary mb-2">Project · {projectName}</div>
         <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">A few clarifying questions</h1>
-        <p className="mt-3 text-muted-foreground">Helps SpecAI tailor the stack and docs to your reality.</p>
+        <p className="mt-3 text-muted-foreground">Helps PLANNR tailor the stack and docs to your reality.</p>
       </div>
 
       <div className="space-y-5">

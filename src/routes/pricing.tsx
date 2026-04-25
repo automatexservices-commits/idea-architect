@@ -5,9 +5,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — SpecAI" },
+      { title: "Pricing — PLANNR" },
       { name: "description", content: "Simple plans for indie devs, founders, and teams. Start free." },
-      { property: "og:title", content: "Pricing — SpecAI" },
+      { property: "og:title", content: "Pricing — PLANNR" },
       { property: "og:description", content: "Free for solo builders. Pro for shipping startups. Team for organizations." },
     ],
   }),

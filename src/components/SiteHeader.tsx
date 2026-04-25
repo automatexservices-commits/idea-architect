@@ -39,7 +39,7 @@ export function SiteHeader() {
           </nav>
           <Link
             to="/build"
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity glow-primary-sm whitespace-nowrap"
+            className="btn-3d btn-3d-sm whitespace-nowrap"
           >
             Start Building
           </Link>

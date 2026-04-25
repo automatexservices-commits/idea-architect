@@ -115,7 +115,7 @@ function ExamplesPage() {
             <div className="mt-16 text-center">
               <Link
                 to="/build"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-medium glow-primary hover:scale-[1.02] transition-transform"
+                className="btn-3d"
               >
                 Generate your own
                 <ArrowRight className="w-4 h-4" />

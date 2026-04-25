@@ -105,7 +105,7 @@ function DocsPage() {
         <div className="py-16 text-center border-t border-border/50">
           <Link
             to="/build"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-medium glow-primary hover:scale-[1.02] transition-transform"
+            className="btn-3d"
           >
             Try it now
           </Link>

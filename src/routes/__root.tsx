@@ -30,7 +30,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SpecAI — From idea to production-ready spec" },
+      { title: "PLANNR — From idea to production-ready spec" },
       { name: "description", content: "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

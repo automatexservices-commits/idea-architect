@@ -77,13 +77,13 @@ function PricingPage() {
 
         <section className="py-16">
           <div className="mx-auto max-w-6xl px-6">
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {TIERS.map((t) => (
                 <div
                   key={t.name}
-                  className={`relative rounded-2xl border p-7 transition-all ${
+                  className={`relative rounded-2xl border p-6 transition-all flex flex-col ${
                     t.highlight
-                      ? "border-primary bg-surface/80 glow-primary-sm scale-[1.02]"
+                      ? "border-primary bg-surface/80 glow-primary-sm lg:scale-[1.03]"
                       : "border-border bg-surface/40 hover:border-primary/30"
                   }`}
                 >
@@ -96,12 +96,12 @@ function PricingPage() {
                     <t.icon className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="font-display text-2xl font-bold">{t.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1 mb-6">{t.desc}</p>
+                  <p className="text-sm text-muted-foreground mt-1 mb-6 min-h-[40px]">{t.desc}</p>
                   <div className="mb-6">
-                    <span className="font-display text-5xl font-bold">{t.price}</span>
+                    <span className="font-display text-4xl font-bold">{t.price}</span>
                     <span className="text-sm text-muted-foreground ml-1">{t.cadence}</span>
                   </div>
-                  <ul className="space-y-3 mb-8">
+                  <ul className="space-y-3 mb-8 flex-1">
                     {t.features.map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm">
                         <Check className="w-4 h-4 text-primary shrink-0" />
@@ -111,11 +111,7 @@ function PricingPage() {
                   </ul>
                   <Link
                     to="/build"
-                    className={`block text-center px-5 py-3 rounded-xl font-medium transition-all ${
-                      t.highlight
-                        ? "bg-primary text-primary-foreground glow-primary-sm hover:scale-[1.02]"
-                        : "bg-surface border border-border hover:border-primary/50 hover:bg-accent"
-                    }`}
+                    className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
                   >
                     {t.cta}
                   </Link>

@@ -37,8 +37,7 @@ function LandingPage() {
           </h1>
 
           <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-up" style={{ animationDelay: "0.2s" }}>
-            PLANNR turns a one-line idea into a complete project package — PRD, architecture,
-            API spec, design system, and folder structure. Ready to build.
+            PLANNR turns a one-line idea into a complete project package — PRD, architecture, API spec, design system, and folder structure. Ready to build.
           </p>
 
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-up" style={{ animationDelay: "0.3s" }}>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ArrowRight, ArrowLeft, Loader2, Sparkles, Download, FileText, Check, RefreshCw } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FileTree, type TreeNode } from "@/components/FileTree";
+import { VibePlatforms } from "@/components/VibePlatforms";
 import { useServerFn } from "@tanstack/react-start";
 import {
   generateQuestions,
@@ -561,7 +562,12 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
         </div>
       </div>
 
-      <div className="grid md:grid-cols-[260px_1fr] gap-4 h-[calc(100vh-220px)] min-h-[500px]">
+      {/* Vibe-coding platforms — paste your ZIP straight into your favourite builder */}
+      <div className="mb-6">
+        <VibePlatforms />
+      </div>
+
+      <div className="grid md:grid-cols-[260px_1fr] gap-4 h-[calc(100vh-260px)] min-h-[500px]">
         {/* Sidebar — file tree */}
         <aside className="rounded-2xl border border-border bg-surface/50 overflow-y-auto p-2">
           <FileTree

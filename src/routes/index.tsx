@@ -98,7 +98,7 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Features — two-row marquee (top: right→left, bottom: left→right) */}
       <section id="features" className="py-24 border-t border-border/50">
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center mb-16">
@@ -108,53 +108,48 @@ function LandingPage() {
               <span className="text-muted-foreground">A thinking system.</span>
             </h2>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Brain,
-                title: "Smart clarification",
-                desc: "AI asks 6–8 sharp questions to understand your idea before generating anything.",
-              },
-              {
-                icon: Layers,
-                title: "Stack recommender",
-                desc: "Get a tailored stack — frontend, backend, DB, auth — with rationale you can override.",
-              },
-              {
-                icon: FileCode,
-                title: "7 structured docs",
-                desc: "PRD, SRS, Architecture, Design System, API Spec, Folder Structure, README.",
-              },
-              {
-                icon: Zap,
-                title: "Minutes, not days",
-                desc: "Skip days of doc-writing. Get a complete project package in under 5 minutes.",
-              },
-              {
-                icon: Sparkles,
-                title: "Production-ready",
-                desc: "Outputs are detailed enough to feed directly into your AI coding assistant.",
-              },
-              {
-                icon: Download,
-                title: "Export as ZIP",
-                desc: "Download the entire project folder. GitHub push coming soon.",
-              },
-            ].map((f, i) => (
-              <div
-                key={i}
-                className="group p-6 rounded-2xl border border-border bg-surface/40 hover:bg-surface/80 hover:border-primary/30 transition-all"
-              >
-                <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:glow-primary-sm transition-all">
-                  <f.icon className="w-5 h-5 text-primary" />
-                </div>
-                <h3 className="font-display font-semibold text-lg mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
         </div>
+
+        {(() => {
+          const ROW_TOP = [
+            { icon: Brain, title: "Smart clarification", desc: "AI asks 6–8 sharp questions to understand your idea before generating anything." },
+            { icon: Layers, title: "Stack recommender", desc: "Get a tailored stack — frontend, backend, DB, auth — with rationale you can override." },
+            { icon: FileCode, title: "7 structured docs", desc: "PRD, SRS, Architecture, Design System, API Spec, Folder Structure, README." },
+          ];
+          const ROW_BOTTOM = [
+            { icon: Zap, title: "Minutes, not days", desc: "Skip days of doc-writing. Get a complete project package in under 5 minutes." },
+            { icon: Sparkles, title: "Production-ready", desc: "Outputs are detailed enough to feed directly into your AI coding assistant." },
+            { icon: Download, title: "Export as ZIP", desc: "Download the entire project folder. GitHub push coming soon." },
+          ];
+
+          const Card = ({ f }: { f: { icon: typeof Brain; title: string; desc: string } }) => (
+            <div className="group mx-3 w-[340px] shrink-0 p-6 rounded-2xl border border-border bg-surface/60 hover:bg-surface hover:border-primary/40 transition-all">
+              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center mb-4 group-hover:glow-primary-sm transition-all">
+                <f.icon className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-display font-semibold text-lg mb-2">{f.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+            </div>
+          );
+
+          const top = [...ROW_TOP, ...ROW_TOP, ...ROW_TOP, ...ROW_TOP];
+          const bottom = [...ROW_BOTTOM, ...ROW_BOTTOM, ...ROW_BOTTOM, ...ROW_BOTTOM];
+
+          return (
+            <div className="space-y-5">
+              <div className="marquee py-2">
+                <div className="marquee-track">
+                  {top.map((f, i) => <Card key={`t-${i}`} f={f} />)}
+                </div>
+              </div>
+              <div className="marquee py-2">
+                <div className="marquee-track-reverse">
+                  {bottom.map((f, i) => <Card key={`b-${i}`} f={f} />)}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </section>
 
       {/* How it works */}

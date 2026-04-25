@@ -1,20 +1,51 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, Sparkles, Zap, Crown, Building2 } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Building2, Smartphone } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
       { title: "Pricing — PLANNR" },
-      { name: "description", content: "Simple plans for indie devs, founders, and teams. Start free." },
+      { name: "description", content: "Simple plans for indie devs, founders, and teams. Pay instantly via UPI. Start free." },
       { property: "og:title", content: "Pricing — PLANNR" },
-      { property: "og:description", content: "Free for solo builders. Pro for shipping startups. Enterprise for organizations." },
+      { property: "og:description", content: "Free for solo builders. Pro for shipping startups. Enterprise for organizations. UPI payments supported." },
     ],
   }),
   component: PricingPage,
 });
 
-const TIERS = [
+/* ─────────── UPI configuration ─────────── */
+const UPI_ID = "7984390066@ptyes";
+const UPI_NAME = "PLANNR";
+
+/** Build a UPI deeplink (upi://pay) — opens GPay / PhonePe / Paytm / any UPI app. */
+function upiLink(amount: number, note: string) {
+  const params = new URLSearchParams({
+    pa: UPI_ID,
+    pn: UPI_NAME,
+    am: amount.toFixed(2),
+    cu: "INR",
+    tn: note,
+  });
+  return `upi://pay?${params.toString()}`;
+}
+
+type Tier = {
+  name: string;
+  price: string;
+  cadence: string;
+  icon: typeof Sparkles;
+  desc: string;
+  features: string[];
+  cta: string;
+  highlight: boolean;
+  /** UPI amount in INR — undefined means no UPI charge (free / contact-sales). */
+  amount?: number;
+  /** Override the CTA href (e.g. mailto for sales). */
+  href?: string;
+};
+
+const TIERS: Tier[] = [
   {
     name: "Hobby",
     price: "Free",
@@ -32,8 +63,9 @@ const TIERS = [
     icon: Zap,
     desc: "For founders shipping real products.",
     features: ["Unlimited specs", "All 7 docs", "Priority AI", "GitHub sync (soon)", "Email support"],
-    cta: "Go Pro",
+    cta: "Pay ₹49 via UPI",
     highlight: true,
+    amount: 49,
   },
   {
     name: "Enterprise",
@@ -42,8 +74,9 @@ const TIERS = [
     icon: Crown,
     desc: "For agencies and product teams.",
     features: ["Everything in Pro", "5 seats included", "Shared workspace", "Custom templates", "Priority support"],
-    cta: "Get Enterprise",
+    cta: "Pay ₹150 via UPI",
     highlight: false,
+    amount: 150,
   },
   {
     name: "Custom",
@@ -54,6 +87,7 @@ const TIERS = [
     features: ["Unlimited seats", "On-prem / VPC option", "Custom integrations", "Dedicated success manager", "24/7 SLA support"],
     cta: "Contact sales",
     highlight: false,
+    href: "mailto:hello@plannr.app?subject=Custom%20plan%20enquiry",
   },
 ];
 
@@ -109,17 +143,49 @@ function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    to="/build"
-                    className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
-                  >
-                    {t.cta}
-                  </Link>
+                  {t.amount ? (
+                    <a
+                      href={upiLink(t.amount, `PLANNR ${t.name} plan`)}
+                      className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                      {t.cta}
+                    </a>
+                  ) : t.href ? (
+                    <a
+                      href={t.href}
+                      className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
+                    >
+                      {t.cta}
+                    </a>
+                  ) : (
+                    <Link
+                      to="/build"
+                      className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
+                    >
+                      {t.cta}
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>
 
-            <div className="mt-16 text-center text-sm text-muted-foreground">
+            {/* UPI payment panel */}
+            <div className="mt-12 mx-auto max-w-2xl rounded-2xl border border-border bg-surface/60 p-6 text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-mono uppercase tracking-wider mb-4">
+                <Smartphone className="w-3 h-3" /> UPI · India
+              </div>
+              <h3 className="font-display text-xl font-bold mb-2">Instant payment via UPI</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Tap any paid plan above and your UPI app (GPay, PhonePe, Paytm, BHIM) opens with the amount pre-filled.
+              </p>
+              <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-lg bg-background border border-border font-mono text-sm">
+                <span className="text-muted-foreground">UPI ID:</span>
+                <span className="font-semibold text-foreground select-all">{UPI_ID}</span>
+              </div>
+            </div>
+
+            <div className="mt-10 text-center text-sm text-muted-foreground">
               All plans include unlimited downloads and lifetime access to specs you generate.
             </div>
           </div>

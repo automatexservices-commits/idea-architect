@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Building2 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export const Route = createFileRoute("/pricing")({
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/pricing")({
       { title: "Pricing — PLANNR" },
       { name: "description", content: "Simple plans for indie devs, founders, and teams. Start free." },
       { property: "og:title", content: "Pricing — PLANNR" },
-      { property: "og:description", content: "Free for solo builders. Pro for shipping startups. Team for organizations." },
+      { property: "og:description", content: "Free for solo builders. Pro for shipping startups. Enterprise for organizations." },
     ],
   }),
   component: PricingPage,
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/pricing")({
 const TIERS = [
   {
     name: "Hobby",
-    price: "$0",
+    price: "Free",
     cadence: "forever",
     icon: Sparkles,
     desc: "For weekend builders kicking the tires.",
@@ -27,7 +27,7 @@ const TIERS = [
   },
   {
     name: "Pro",
-    price: "$19",
+    price: "₹49",
     cadence: "/ month",
     icon: Zap,
     desc: "For founders shipping real products.",
@@ -36,12 +36,22 @@ const TIERS = [
     highlight: true,
   },
   {
-    name: "Team",
-    price: "$79",
+    name: "Enterprise",
+    price: "₹150",
     cadence: "/ month",
     icon: Crown,
     desc: "For agencies and product teams.",
     features: ["Everything in Pro", "5 seats included", "Shared workspace", "Custom templates", "Priority support"],
+    cta: "Get Enterprise",
+    highlight: false,
+  },
+  {
+    name: "Custom",
+    price: "Let's talk",
+    cadence: "tailored",
+    icon: Building2,
+    desc: "Bespoke deployments, SLAs, and security reviews.",
+    features: ["Unlimited seats", "On-prem / VPC option", "Custom integrations", "Dedicated success manager", "24/7 SLA support"],
     cta: "Contact sales",
     highlight: false,
   },

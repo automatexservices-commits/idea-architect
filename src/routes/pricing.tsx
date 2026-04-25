@@ -143,17 +143,49 @@ function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    to="/build"
-                    className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
-                  >
-                    {t.cta}
-                  </Link>
+                  {t.amount ? (
+                    <a
+                      href={upiLink(t.amount, `PLANNR ${t.name} plan`)}
+                      className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                      {t.cta}
+                    </a>
+                  ) : t.href ? (
+                    <a
+                      href={t.href}
+                      className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
+                    >
+                      {t.cta}
+                    </a>
+                  ) : (
+                    <Link
+                      to="/build"
+                      className={`btn-3d btn-3d-sm w-full ${t.highlight ? "" : "btn-3d-outline"}`}
+                    >
+                      {t.cta}
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>
 
-            <div className="mt-16 text-center text-sm text-muted-foreground">
+            {/* UPI payment panel */}
+            <div className="mt-12 mx-auto max-w-2xl rounded-2xl border border-border bg-surface/60 p-6 text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[10px] font-mono uppercase tracking-wider mb-4">
+                <Smartphone className="w-3 h-3" /> UPI · India
+              </div>
+              <h3 className="font-display text-xl font-bold mb-2">Instant payment via UPI</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Tap any paid plan above and your UPI app (GPay, PhonePe, Paytm, BHIM) opens with the amount pre-filled.
+              </p>
+              <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-lg bg-background border border-border font-mono text-sm">
+                <span className="text-muted-foreground">UPI ID:</span>
+                <span className="font-semibold text-foreground select-all">{UPI_ID}</span>
+              </div>
+            </div>
+
+            <div className="mt-10 text-center text-sm text-muted-foreground">
               All plans include unlimited downloads and lifetime access to specs you generate.
             </div>
           </div>

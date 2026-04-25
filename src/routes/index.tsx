@@ -43,7 +43,7 @@ function LandingPage() {
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-up" style={{ animationDelay: "0.3s" }}>
             <Link
               to="/build"
-              className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary text-primary-foreground font-medium glow-primary hover:scale-[1.02] transition-transform"
+              className="btn-3d group"
             >
               Start Building Free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -185,7 +185,7 @@ function LandingPage() {
           <div className="mt-16 text-center">
             <Link
               to="/build"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-primary text-primary-foreground font-medium glow-primary hover:scale-[1.02] transition-transform"
+              className="btn-3d"
             >
               Build your spec now
               <ArrowRight className="w-4 h-4" />

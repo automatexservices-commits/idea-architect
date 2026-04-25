@@ -315,7 +315,7 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
         <button
           onClick={onNext}
           disabled={!idea.trim() || loading}
-          className="w-full mt-4 px-6 py-3.5 rounded-xl bg-primary text-primary-foreground font-medium glow-primary hover:scale-[1.01] transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+          className="btn-3d w-full mt-4"
         >
           {loading ? (
             <>
@@ -399,14 +399,14 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
       <div className="mt-8 flex gap-3">
         <button
           onClick={onBack}
-          className="px-5 py-3 rounded-xl border border-border hover:bg-surface transition-colors flex items-center gap-2 text-sm"
+          className="btn-3d btn-3d-outline"
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={onNext}
           disabled={loading}
-          className="flex-1 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium glow-primary-sm hover:scale-[1.01] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+          className="btn-3d flex-1"
         >
           {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Recommending stack...</> : <>Next: Pick stack <ArrowRight className="w-4 h-4" /></>}
         </button>
@@ -452,12 +452,12 @@ function StackStep({ stack, setStack, onBack, onNext }: any) {
       </div>
 
       <div className="mt-8 flex gap-3">
-        <button onClick={onBack} className="px-5 py-3 rounded-xl border border-border hover:bg-surface transition-colors flex items-center gap-2 text-sm">
+        <button onClick={onBack} className="btn-3d btn-3d-outline">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={onNext}
-          className="flex-1 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium glow-primary hover:scale-[1.01] transition-transform flex items-center justify-center gap-2"
+          className="btn-3d flex-1"
         >
           Generate documentation <ArrowRight className="w-4 h-4" />
         </button>
@@ -549,22 +549,17 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
         <div className="flex gap-3">
           <button
             onClick={onRestart}
-            className="px-4 py-2.5 rounded-xl border border-border hover:bg-surface transition-colors text-sm flex items-center gap-2"
+            className="btn-3d btn-3d-sm btn-3d-outline"
           >
             <RefreshCw className="w-4 h-4" /> New project
           </button>
           <button
             onClick={onDownload}
-            className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium glow-primary-sm hover:scale-[1.02] transition-transform flex items-center gap-2"
+            className="btn-3d btn-3d-sm"
           >
             <Download className="w-4 h-4" /> Download ZIP
           </button>
         </div>
-      </div>
-
-      {/* Vibe-coding platforms — paste your ZIP straight into your favourite builder */}
-      <div className="mb-6">
-        <VibePlatforms />
       </div>
 
       <div className="grid md:grid-cols-[260px_1fr] gap-4 h-[calc(100vh-260px)] min-h-[500px]">
@@ -590,6 +585,11 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
             </pre>
           </div>
         </div>
+      </div>
+
+      {/* Vibe-coding platforms — paste your ZIP into your favourite builder */}
+      <div className="mt-8">
+        <VibePlatforms />
       </div>
     </section>
   );

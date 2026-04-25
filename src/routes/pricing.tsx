@@ -1,20 +1,51 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, Sparkles, Zap, Crown, Building2 } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Building2, Smartphone } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
       { title: "Pricing — PLANNR" },
-      { name: "description", content: "Simple plans for indie devs, founders, and teams. Start free." },
+      { name: "description", content: "Simple plans for indie devs, founders, and teams. Pay instantly via UPI. Start free." },
       { property: "og:title", content: "Pricing — PLANNR" },
-      { property: "og:description", content: "Free for solo builders. Pro for shipping startups. Enterprise for organizations." },
+      { property: "og:description", content: "Free for solo builders. Pro for shipping startups. Enterprise for organizations. UPI payments supported." },
     ],
   }),
   component: PricingPage,
 });
 
-const TIERS = [
+/* ─────────── UPI configuration ─────────── */
+const UPI_ID = "7984390066@ptyes";
+const UPI_NAME = "PLANNR";
+
+/** Build a UPI deeplink (upi://pay) — opens GPay / PhonePe / Paytm / any UPI app. */
+function upiLink(amount: number, note: string) {
+  const params = new URLSearchParams({
+    pa: UPI_ID,
+    pn: UPI_NAME,
+    am: amount.toFixed(2),
+    cu: "INR",
+    tn: note,
+  });
+  return `upi://pay?${params.toString()}`;
+}
+
+type Tier = {
+  name: string;
+  price: string;
+  cadence: string;
+  icon: typeof Sparkles;
+  desc: string;
+  features: string[];
+  cta: string;
+  highlight: boolean;
+  /** UPI amount in INR — undefined means no UPI charge (free / contact-sales). */
+  amount?: number;
+  /** Override the CTA href (e.g. mailto for sales). */
+  href?: string;
+};
+
+const TIERS: Tier[] = [
   {
     name: "Hobby",
     price: "Free",
@@ -32,8 +63,9 @@ const TIERS = [
     icon: Zap,
     desc: "For founders shipping real products.",
     features: ["Unlimited specs", "All 7 docs", "Priority AI", "GitHub sync (soon)", "Email support"],
-    cta: "Go Pro",
+    cta: "Pay ₹49 via UPI",
     highlight: true,
+    amount: 49,
   },
   {
     name: "Enterprise",
@@ -42,8 +74,9 @@ const TIERS = [
     icon: Crown,
     desc: "For agencies and product teams.",
     features: ["Everything in Pro", "5 seats included", "Shared workspace", "Custom templates", "Priority support"],
-    cta: "Get Enterprise",
+    cta: "Pay ₹150 via UPI",
     highlight: false,
+    amount: 150,
   },
   {
     name: "Custom",
@@ -54,6 +87,7 @@ const TIERS = [
     features: ["Unlimited seats", "On-prem / VPC option", "Custom integrations", "Dedicated success manager", "24/7 SLA support"],
     cta: "Contact sales",
     highlight: false,
+    href: "mailto:hello@plannr.app?subject=Custom%20plan%20enquiry",
   },
 ];
 

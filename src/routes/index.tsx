@@ -263,15 +263,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <footer className="py-12 border-t border-border/50">
-        <div className="mx-auto max-w-7xl px-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <div className="font-mono">© PLANNR · Built for vibe coders</div>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
-            <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

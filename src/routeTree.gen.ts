@@ -10,15 +10,35 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as RefundRouteImport } from './routes/refund'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ExamplesRouteImport } from './routes/examples'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as BuildRouteImport } from './routes/build'
 import { Route as IndexRouteImport } from './routes/index'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -36,6 +56,16 @@ const DocsRoute = DocsRouteImport.update({
   path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuildRoute = BuildRouteImport.update({
   id: '/build',
   path: '/build',
@@ -50,49 +80,96 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
   '/docs': typeof DocsRoute
   '/examples': typeof ExamplesRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
   '/docs': typeof DocsRoute
   '/examples': typeof ExamplesRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/build': typeof BuildRoute
+  '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
   '/docs': typeof DocsRoute
   '/examples': typeof ExamplesRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/build' | '/docs' | '/examples' | '/pricing' | '/welcome'
+  fullPaths:
+    | '/'
+    | '/build'
+    | '/contact'
+    | '/cookies'
+    | '/docs'
+    | '/examples'
+    | '/pricing'
+    | '/privacy'
+    | '/refund'
+    | '/terms'
+    | '/welcome'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/build' | '/docs' | '/examples' | '/pricing' | '/welcome'
+  to:
+    | '/'
+    | '/build'
+    | '/contact'
+    | '/cookies'
+    | '/docs'
+    | '/examples'
+    | '/pricing'
+    | '/privacy'
+    | '/refund'
+    | '/terms'
+    | '/welcome'
   id:
     | '__root__'
     | '/'
     | '/build'
+    | '/contact'
+    | '/cookies'
     | '/docs'
     | '/examples'
     | '/pricing'
+    | '/privacy'
+    | '/refund'
+    | '/terms'
     | '/welcome'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuildRoute: typeof BuildRoute
+  ContactRoute: typeof ContactRoute
+  CookiesRoute: typeof CookiesRoute
   DocsRoute: typeof DocsRoute
   ExamplesRoute: typeof ExamplesRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundRoute: typeof RefundRoute
+  TermsRoute: typeof TermsRoute
   WelcomeRoute: typeof WelcomeRoute
 }
 
@@ -103,6 +180,27 @@ declare module '@tanstack/react-router' {
       path: '/welcome'
       fullPath: '/welcome'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -126,6 +224,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/build': {
       id: '/build'
       path: '/build'
@@ -146,9 +258,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuildRoute: BuildRoute,
+  ContactRoute: ContactRoute,
+  CookiesRoute: CookiesRoute,
   DocsRoute: DocsRoute,
   ExamplesRoute: ExamplesRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundRoute: RefundRoute,
+  TermsRoute: TermsRoute,
   WelcomeRoute: WelcomeRoute,
 }
 export const routeTree = rootRouteImport

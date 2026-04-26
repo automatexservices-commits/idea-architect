@@ -299,6 +299,44 @@
   }
 
   /* ─────────────────────────────────────────────────────────────
+     Profile 3D icon button — mini version of btn-3d, circular.
+     ───────────────────────────────────────────────────────────── */
+  .profile-3d {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    color: oklch(0.16 0.02 150);
+    background: linear-gradient(180deg, oklch(0.86 0.26 145) 0%, oklch(0.78 0.27 145) 100%);
+    border: 1.5px solid oklch(0.42 0.18 145);
+    box-shadow:
+      0 4px 0 0 oklch(0.42 0.18 145),
+      0 6px 12px -4px oklch(0.78 0.27 145 / 0.4),
+      inset 0 1px 0 0 oklch(1 0 0 / 0.35);
+    cursor: pointer;
+    transition: transform 0.12s var(--transition-smooth), box-shadow 0.12s var(--transition-smooth), filter 0.2s var(--transition-smooth);
+  }
+  .profile-3d:hover {
+    transform: translateY(1px);
+    box-shadow:
+      0 3px 0 0 oklch(0.42 0.18 145),
+      0 5px 10px -4px oklch(0.78 0.27 145 / 0.5),
+      inset 0 1px 0 0 oklch(1 0 0 / 0.35);
+    filter: brightness(1.04);
+  }
+  .profile-3d:active,
+  .profile-3d[aria-expanded="true"] {
+    transform: translateY(4px);
+    box-shadow:
+      0 0 0 0 oklch(0.42 0.18 145),
+      0 2px 6px -2px oklch(0.78 0.27 145 / 0.35),
+      inset 0 1px 0 0 oklch(1 0 0 / 0.25);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
      Continuous right-to-left marquee for logo strip.
      Duplicate the children once in markup; track is 200% wide.
      ───────────────────────────────────────────────────────────── */

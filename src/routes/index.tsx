@@ -106,9 +106,75 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Features — two-row marquee (top: right→left, bottom: left→right) */}
+      {/* Examples preview — eye-catching marquee of realistic specs */}
+      <section className="py-20 border-t border-border/50 overflow-hidden">
+        <div className="mx-auto max-w-6xl px-6 mb-10">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-surface/60 text-xs text-muted-foreground mb-4">
+                <Sparkles className="w-3 h-3 text-primary" />
+                Examples
+              </div>
+              <h2 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
+                Real specs. <span className="gradient-text">Real products.</span>
+              </h2>
+              <p className="mt-3 text-muted-foreground max-w-xl">
+                Browse a slice of what PLANNR can generate, from dating apps to fintech wallets.
+              </p>
+            </div>
+            <Link to="/examples" className="btn-3d btn-3d-outline btn-3d-sm whitespace-nowrap self-start md:self-auto">
+              See all examples
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        {(() => {
+          const PREVIEWS = [
+            { tag: "Dating",     title: "Lumr",     image: exDating },
+            { tag: "Delivery",   title: "ZipEats",  image: exDelivery },
+            { tag: "SaaS",       title: "Metricly", image: exSaas },
+            { tag: "Fintech",    title: "PayWave",  image: exFintech },
+            { tag: "E-commerce", title: "kart9",    image: exShop },
+            { tag: "Health",     title: "Medico",   image: exHealth },
+          ];
+          const loop = [...PREVIEWS, ...PREVIEWS];
+          return (
+            <div className="marquee py-2">
+              <div className="marquee-track">
+                {loop.map((p, i) => (
+                  <Link
+                    to="/examples"
+                    key={`preview-${p.title}-${i}`}
+                    className="group w-[360px] shrink-0 mx-3 rounded-2xl border border-border bg-surface/60 overflow-hidden hover:border-primary/40 transition-all"
+                  >
+                    <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+                      <img
+                        src={p.image}
+                        alt={`${p.title} preview`}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                      />
+                      <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-background/90 backdrop-blur text-[10px] font-mono uppercase tracking-wider border border-border">
+                        {p.tag}
+                      </div>
+                    </div>
+                    <div className="px-4 py-3 flex items-center justify-between">
+                      <span className="font-display font-semibold group-hover:text-primary transition-colors">{p.title}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground">7 docs</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+      </section>
+
+      {/* Features section */}
       <section id="features" className="py-24 border-t border-border/50">
         <div className="mx-auto max-w-6xl px-6">
+
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
               Not a code generator.

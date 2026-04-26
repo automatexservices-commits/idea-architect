@@ -1,8 +1,28 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useNavigate, useLocation } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { InteractiveGrid } from "@/components/InteractiveGrid";
 import { SplashIntro } from "@/components/SplashIntro";
+
+/**
+ * Gate: on first session visit, redirect "/" -> "/welcome" so the user
+ * sees the login / explore-now choice before entering the site.
+ */
+function WelcomeGate() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (pathname !== "/") return;
+    try {
+      if (!sessionStorage.getItem("plannr-entered")) {
+        navigate({ to: "/welcome", replace: true });
+      }
+    } catch {}
+  }, [pathname, navigate]);
+  return null;
+}
 
 function NotFoundComponent() {
   return (
@@ -69,6 +89,7 @@ function RootComponent() {
   return (
     <>
       <SplashIntro />
+      <WelcomeGate />
       <InteractiveGrid />
       <Outlet />
     </>

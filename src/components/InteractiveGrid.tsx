@@ -35,7 +35,7 @@ export function InteractiveGrid() {
 
     const onLeave = () => {
       active = false;
-      el.style.setProperty("--grid-opacity", "0.55");
+      el.style.setProperty("--grid-opacity", "0.75");
     };
 
     const tick = () => {

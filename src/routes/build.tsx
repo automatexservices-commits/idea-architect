@@ -333,82 +333,132 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
 }
 
 function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, onNext, loading }: any) {
+  const [idx, setIdx] = useState(0);
+  const total = questions.length;
+  const q: Question | undefined = questions[idx];
+  const isLast = idx === total - 1;
+  const currentAnswer = q ? answers[q.id] : "";
+  const hasAnswer = !!(currentAnswer && String(currentAnswer).trim());
+
+  const goNext = () => {
+    if (!hasAnswer) return;
+    if (isLast) {
+      onNext();
+    } else {
+      setIdx((i) => Math.min(i + 1, total - 1));
+    }
+  };
+
+  const goPrev = () => {
+    if (idx === 0) {
+      onBack();
+    } else {
+      setIdx((i) => Math.max(i - 1, 0));
+    }
+  };
+
+  const pickOption = (opt: string) => {
+    setAnswers({ ...answers, [q!.id]: opt });
+    // Auto-advance — feels snappy and removes the need to hit "Next"
+    if (isLast) {
+      // On the last question, let the user confirm with the explicit button
+      return;
+    }
+    setTimeout(() => setIdx((i) => Math.min(i + 1, total - 1)), 220);
+  };
+
+  if (!q) return null;
+
   return (
-    <section className="mx-auto max-w-3xl px-6 py-12 animate-fade-up">
-      <div className="mb-8">
+    <section className="mx-auto max-w-2xl px-6 py-12 animate-fade-up">
+      <div className="mb-6">
         <div className="text-xs font-mono uppercase tracking-wider text-primary mb-2">Project · {projectName}</div>
-        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">A few clarifying questions</h1>
-        <p className="mt-3 text-muted-foreground">Helps PLANNR tailor the stack and docs to your reality.</p>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight">A few clarifying questions</h1>
+          <span className="font-mono text-sm text-muted-foreground shrink-0">
+            {String(idx + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-4 h-1.5 w-full rounded-full bg-border/60 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-primary to-primary-glow transition-all duration-500"
+            style={{ width: `${((idx + (hasAnswer ? 1 : 0)) / total) * 100}%` }}
+          />
+        </div>
       </div>
 
-      <div className="space-y-5">
-        {questions.map((q: Question, i: number) => (
-          <div key={q.id} className="p-5 rounded-xl border border-border bg-surface/50">
-            <div className="flex gap-3">
-              <span className="font-mono text-sm text-primary shrink-0">{String(i + 1).padStart(2, "0")}</span>
-              <div className="flex-1">
-                <label className="block font-medium mb-3">{q.question}</label>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {(q.options || []).map((opt) => {
-                    const selected = answers[q.id] === opt;
-                    return (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => setAnswers({ ...answers, [q.id]: opt })}
-                        className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-all ${
-                          selected
-                            ? "border-primary bg-accent text-foreground glow-primary-sm"
-                            : "border-border bg-background hover:border-primary/50 hover:bg-surface"
-                        }`}
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <span
-                            className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
-                              selected ? "border-primary bg-primary" : "border-border"
-                            }`}
-                          >
-                            {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
-                          </span>
-                          {opt}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+      {/* Single question card — replaces on change with fade-up */}
+      <div key={q.id} className="p-6 rounded-2xl border border-border bg-surface/60 animate-fade-up">
+        <label className="block font-medium text-lg mb-5">{q.question}</label>
 
-                {/* Custom answer / preference */}
-                <div className="mt-3">
-                  <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
-                    Or write your own answer / preference
-                  </label>
-                  <input
-                    type="text"
-                    value={answers[q.id] && !(q.options || []).includes(answers[q.id]) ? answers[q.id] : ""}
-                    onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
-                    placeholder="Type a custom answer..."
-                    className="w-full px-3 py-2 rounded-lg bg-background border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {(q.options || []).map((opt) => {
+            const selected = currentAnswer === opt;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => pickOption(opt)}
+                className={`text-left px-4 py-3 rounded-xl border text-sm transition-all ${
+                  selected
+                    ? "border-primary bg-accent text-foreground glow-primary-sm"
+                    : "border-border bg-background hover:border-primary/50 hover:bg-surface"
+                }`}
+              >
+                <span className="inline-flex items-center gap-2.5">
+                  <span
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                      selected ? "border-primary bg-primary" : "border-border"
+                    }`}
+                  >
+                    {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                  </span>
+                  {opt}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Custom answer */}
+        <div className="mt-5">
+          <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+            Or write your own answer
+          </label>
+          <input
+            type="text"
+            value={currentAnswer && !(q.options || []).includes(currentAnswer) ? currentAnswer : ""}
+            onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && hasAnswer) {
+                e.preventDefault();
+                goNext();
+              }
+            }}
+            placeholder="Type a custom answer and press Enter…"
+            className="w-full px-3 py-2.5 rounded-lg bg-background border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+          />
+        </div>
       </div>
 
-      <div className="mt-8 flex gap-3">
-        <button
-          onClick={onBack}
-          className="btn-3d btn-3d-outline"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back
+      <div className="mt-6 flex gap-3">
+        <button onClick={goPrev} className="btn-3d btn-3d-outline">
+          <ArrowLeft className="w-4 h-4" /> {idx === 0 ? "Back" : "Previous"}
         </button>
         <button
-          onClick={onNext}
-          disabled={loading}
+          onClick={goNext}
+          disabled={!hasAnswer || loading}
           className="btn-3d flex-1"
         >
-          {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Recommending stack...</> : <>Next: Pick stack <ArrowRight className="w-4 h-4" /></>}
+          {loading ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Recommending stack...</>
+          ) : isLast ? (
+            <>Next: Pick stack <ArrowRight className="w-4 h-4" /></>
+          ) : (
+            <>Next question <ArrowRight className="w-4 h-4" /></>
+          )}
         </button>
       </div>
     </section>

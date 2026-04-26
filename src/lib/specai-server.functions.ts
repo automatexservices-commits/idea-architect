@@ -131,14 +131,154 @@ export const recommendStack = createServerFn({ method: "POST" })
     return JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
   });
 
-// 3. Generate all docs
+// 3. Generate all docs — modeled on the Vivek Mishra "Stop Vibe Coding Without a Plan"
+// PRD framework: every doc is exhaustive, numbered, table-driven, and production-grade.
 const DOC_PROMPTS: Record<string, string> = {
-  prd: "Write a comprehensive Product Requirements Document (PRD) in Markdown. Include: Overview, Goals, Target Users, User Stories, Features (MVP + Future), Success Metrics, Constraints. Be specific and detailed.",
-  srs: "Write a Software Requirements Specification (SRS) in Markdown. Include: Functional Requirements (numbered), Non-Functional Requirements (performance, security, scalability), External Interfaces, Data Requirements.",
-  architecture: "Write a system ARCHITECTURE document in Markdown. Include: High-level diagram (use ASCII or mermaid), Components & responsibilities, Data flow, Deployment topology, Key design decisions.",
-  designSystem: "Write a DESIGN_SYSTEM document in Markdown. Include: Brand principles, Color palette (with hex), Typography, Spacing scale, Component patterns, Accessibility notes.",
-  apiSpec: "Write an API_SPEC document in Markdown. Include: Authentication, REST endpoints (method, path, request, response), Error codes, Rate limits. Use code blocks for examples.",
-  readme: "Write a polished README.md. Include: Project name & tagline, Features, Tech stack, Getting started, Project structure, Contributing, License.",
+  prd: `Write a COMPLETE, production-grade Product Requirements Document in Markdown, modeled exactly on the Vivek Mishra PRD framework.
+
+Required structure (use these exact numbered sections and subsections):
+
+# {Project Name}
+## Product Requirements Document
+
+A short metadata table at the top with rows: Version | Date | Tech Stack | Status | Author.
+
+## 1. Executive Summary
+2-3 paragraphs. State what the product is, who it serves, and the methodology used to plan it.
+
+## 2. Product Overview
+### 2.1 What This Platform Does
+### 2.2 Core Responsibilities (bullet list of every backend/frontend responsibility)
+### 2.3 Tech Stack Decisions — render as a Markdown table (Component | Choice | Reason)
+
+## 3. System Architecture
+### 3.1 Architecture Pattern
+### 3.2 Request Flow (numbered 1..N)
+### 3.3 Folder Structure (code block tree)
+
+## 4. Data Models
+For every collection/table, include a Markdown TABLE: Field | Type | Required | Unique | Description. Cover at minimum: Users, Projects, UsageRecords, Subscriptions, AuditLogs (adapt names to the project).
+
+## 5. Features (MVP + Phase 2)
+Numbered list with acceptance criteria for each feature.
+
+## 6. User Stories
+Format: "As a <role>, I want <action>, so that <outcome>."
+
+## 7. Success Metrics
+Table: Metric | Target | Measurement Method.
+
+## 8. Constraints & Assumptions
+
+## 9. Open Items for Phase 2
+
+Rules:
+- Use Markdown tables liberally — they are the visual signature of this PRD style.
+- Be specific to the user's idea, answers, and stack. Do NOT generalize.
+- No filler. Every section must contain real, decision-ready content.`,
+
+  srs: `Write a Software Requirements Specification (SRS) in Markdown following the Vivek Mishra style.
+
+Structure:
+# {Project Name} — SRS
+## 1. Introduction (Purpose, Scope, Definitions)
+## 2. Functional Requirements
+   Numbered FR-1, FR-2, … each with: ID | Description | Priority | Acceptance Criteria (use a table per group).
+## 3. Non-Functional Requirements
+   Sub-sections: Performance, Security, Scalability, Availability, Maintainability — each with measurable targets in tables.
+## 4. External Interfaces (APIs, third-party services, hardware) — table form.
+## 5. Data Requirements (entity list + retention policies) — table form.
+## 6. Constraints & Assumptions
+## 7. Acceptance & Sign-off Criteria
+
+Use Markdown tables wherever you list more than 2 attributes per item.`,
+
+  architecture: `Write a System ARCHITECTURE document in Markdown matching the Vivek Mishra reference style.
+
+Structure:
+# {Project Name} — System Architecture
+
+## 1. Architecture Pattern
+Explain hybrid/monolith/microservices choice and WHY it fits this idea.
+
+## 2. High-Level Diagram
+Use a \`\`\`mermaid graph LR\`\`\` block showing Client → Edge/API → Services → Data stores → External providers.
+
+## 3. Components & Responsibilities
+Markdown TABLE: Component | Responsibility | Tech | Scaling Notes.
+
+## 4. Request Flow
+Numbered list (1..N) describing a typical request from client → response.
+
+## 5. Data Flow
+Describe writes vs reads, async jobs, webhooks.
+
+## 6. Folder Structure
+A code block with the exact folder tree (group by feature, not file type).
+
+## 7. Deployment Topology
+Mermaid or table: where each service runs, regions, CDN, DB tier.
+
+## 8. Middleware Stack (ordered)
+6.1 Auth · 6.2 Rate limit · 6.3 Validation · 6.4 Logging · 6.5 Error handler — describe each.
+
+## 9. Security Considerations
+Bullet list grouped by: Auth, API, Data, Secrets.
+
+## 10. Scaling Triggers
+Table: Signal | Threshold | Action.
+
+Be specific to the user's stack — name actual services (e.g., "Vercel Edge", "MongoDB Atlas M10", "Stripe Billing").`,
+
+  designSystem: `Write a DESIGN_SYSTEM document in Markdown.
+
+Sections:
+# {Project Name} — Design System
+## 1. Brand Principles (3-5 principles)
+## 2. Color Palette — TABLE: Token | Hex | Usage. Cover background, surface, primary, primary-foreground, accent, muted, destructive, border, ring.
+## 3. Typography — TABLE: Role | Font | Weight | Size | Line-height. Cover display, h1-h4, body, mono, caption.
+## 4. Spacing & Radius scale (table)
+## 5. Component Patterns (Button, Input, Card, Modal, Toast) — describe variants + states.
+## 6. Motion (durations, easings) — table.
+## 7. Accessibility — contrast targets, focus states, keyboard nav.`,
+
+  apiSpec: `Write an exhaustive API_SPEC in Markdown matching the Vivek Mishra endpoint catalogue style.
+
+Structure:
+# {Project Name} — API Specification
+
+## 1. Conventions (base URL, versioning, content-type, auth header)
+
+## 2. Authentication
+Describe JWT/refresh-token flow, cookie strategy, RBAC roles.
+
+## 3. Error Format
+Show a JSON error envelope and a TABLE of all error codes: Code | HTTP | Meaning | When.
+
+## 4. Endpoints — Complete Specification
+Group endpoints into logical sections (4.1 Auth, 4.2 Users, 4.3 Resources, 4.4 Payments, 4.5 Admin — adapt to the project).
+
+For EVERY endpoint use this exact format:
+
+### {METHOD} {/path}
+A small TABLE with rows: Method | Path | Auth Required | Rate Limit | Description.
+
+**Request Body** — bullet list of fields with types.
+
+**Success Response — {status} {Name}** — bullet list of fields.
+
+**Error Responses** — bullet list of (status → reason).
+
+**Actions** — numbered list of server-side steps performed.
+
+## 5. Webhooks (if applicable) — list each event with idempotency notes.
+
+## 6. Rate Limits — TABLE: Tier | Endpoint group | Limit.
+
+Cover at minimum: register, login, refresh, logout, password reset, profile CRUD, the project's core resources, and any payment/admin endpoints implied by the idea.`,
+
+  readme: `Write a polished README.md.
+Sections: Project name + tagline · Badges placeholder · Features · Tech Stack (table) · Quick Start (numbered) · Environment Variables (table) · Project Structure (tree) · Scripts · Deployment · Contributing · License.`,
 };
 
 export const generateDocument = createServerFn({ method: "POST" })
@@ -148,7 +288,7 @@ export const generateDocument = createServerFn({ method: "POST" })
     const result = await callAI([
       {
         role: "system",
-        content: `You are a senior product engineer writing professional project documentation. Output ONLY valid Markdown — no preamble, no "Sure, here's...". Start directly with the # heading.`,
+        content: `You are a senior product engineer writing professional, decision-ready project documentation in the style of the "Stop Vibe Coding Without a Plan" PRD framework by Vivek Mishra. Output ONLY valid Markdown — no preamble, no "Sure, here's...". Start directly with the # heading. Use Markdown tables liberally for any structured data (fields, endpoints, components, metrics). Be exhaustive and specific to the user's idea — no placeholder text.`,
       },
       {
         role: "user",

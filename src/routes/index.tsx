@@ -1,6 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Sparkles, FileCode, Layers, Download, Brain, Zap } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+
+import exDating from "@/assets/ex-dating.jpg";
+import exDelivery from "@/assets/ex-delivery.jpg";
+import exSaas from "@/assets/ex-saas.jpg";
+import exFintech from "@/assets/ex-fintech.jpg";
+import exShop from "@/assets/ex-shop.jpg";
+import exHealth from "@/assets/ex-health.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({

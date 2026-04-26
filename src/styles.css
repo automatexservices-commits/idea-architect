@@ -132,28 +132,28 @@
   .interactive-grid {
     --mx: 50vw;
     --my: 50vh;
-    --grid-opacity: 0.55;
+    --grid-opacity: 0.85;
     background-color: var(--background);
     background-image:
-      /* Bold accent grid (every 4th line) */
-      linear-gradient(to right, oklch(0.78 0.27 145 / 0.18) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(0.78 0.27 145 / 0.18) 1px, transparent 1px),
-      /* Fine base grid */
-      linear-gradient(to right, oklch(0.45 0.04 150 / 0.08) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(0.45 0.04 150 / 0.08) 1px, transparent 1px);
+      /* Bold accent grid (every 4th line) — neon green, more visible */
+      linear-gradient(to right, oklch(0.62 0.22 145 / 0.32) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.62 0.22 145 / 0.32) 1px, transparent 1px),
+      /* Fine base grid — darker neutral lines */
+      linear-gradient(to right, oklch(0.32 0.04 150 / 0.22) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.32 0.04 150 / 0.22) 1px, transparent 1px);
     background-size: 192px 192px, 192px 192px, 48px 48px, 48px 48px;
     -webkit-mask-image:
-      radial-gradient(circle 320px at var(--mx) var(--my),
+      radial-gradient(circle 360px at var(--mx) var(--my),
         rgba(0, 0, 0, 1) 0%,
-        rgba(0, 0, 0, 0.6) 35%,
-        rgba(0, 0, 0, 0.18) 70%,
-        rgba(0, 0, 0, 0.08) 100%);
+        rgba(0, 0, 0, 0.8) 35%,
+        rgba(0, 0, 0, 0.45) 70%,
+        rgba(0, 0, 0, 0.28) 100%);
     mask-image:
-      radial-gradient(circle 320px at var(--mx) var(--my),
+      radial-gradient(circle 360px at var(--mx) var(--my),
         rgba(0, 0, 0, 1) 0%,
-        rgba(0, 0, 0, 0.6) 35%,
-        rgba(0, 0, 0, 0.18) 70%,
-        rgba(0, 0, 0, 0.08) 100%);
+        rgba(0, 0, 0, 0.8) 35%,
+        rgba(0, 0, 0, 0.45) 70%,
+        rgba(0, 0, 0, 0.28) 100%);
     opacity: var(--grid-opacity);
     transition: opacity 0.4s var(--transition-smooth);
   }
@@ -164,9 +164,9 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(circle 280px at var(--mx) var(--my),
-      oklch(0.78 0.27 145 / 0.22) 0%,
-      oklch(0.78 0.27 145 / 0.08) 40%,
+    background: radial-gradient(circle 300px at var(--mx) var(--my),
+      oklch(0.78 0.27 145 / 0.30) 0%,
+      oklch(0.78 0.27 145 / 0.12) 40%,
       transparent 70%);
     mix-blend-mode: multiply;
   }

@@ -1,6 +1,7 @@
 import { Link, useRouter, useLocation } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import plannrLogo from "@/assets/plannr-logo.png";
+import { ProfileMenu } from "@/components/ProfileMenu";
 
 export function SiteHeader() {
   const router = useRouter();
@@ -69,6 +70,7 @@ export function SiteHeader() {
           >
             Start Building
           </Link>
+          <ProfileMenu />
         </div>
       </div>
     </header>

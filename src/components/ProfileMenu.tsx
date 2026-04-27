@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { User, History, Settings, LogOut, Sparkles, FileText, CreditCard } from "lucide-react";
+import { User, History, Settings, LogOut, Sparkles, FileText, CreditCard, LogIn } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 type HistoryItem = {
   id: string;
@@ -36,6 +38,7 @@ export function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (open) setHistory(loadHistory());
@@ -57,12 +60,22 @@ export function ProfileMenu() {
     };
   }, [open]);
 
-  const handleLogout = () => {
-    try {
-      sessionStorage.removeItem("plannr-entered");
-    } catch {}
+  const handleLogout = async () => {
+    try { await supabase.auth.signOut(); } catch {}
+    try { sessionStorage.removeItem("plannr-entered"); } catch {}
     window.location.href = "/welcome";
   };
+
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email?.split("@")[0] ||
+    "Guest builder";
+  const subline = user?.email || "Vibe coder · Free plan";
+  const avatarUrl =
+    (user?.user_metadata?.avatar_url as string | undefined) ||
+    (user?.user_metadata?.picture as string | undefined);
+
 
   return (
     <div ref={ref} className="relative">
@@ -83,15 +96,19 @@ export function ProfileMenu() {
         >
           {/* Header */}
           <div className="px-4 py-4 border-b border-border bg-gradient-to-br from-surface to-card flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center ring-2 ring-primary/30">
-              <User className="w-5 h-5 text-primary-foreground" />
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center ring-2 ring-primary/30 overflow-hidden">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-5 h-5 text-primary-foreground" />
+              )}
             </div>
             <div className="min-w-0">
               <div className="font-display font-semibold text-sm leading-tight truncate">
-                Guest builder
+                {displayName}
               </div>
               <div className="text-[11px] text-muted-foreground font-mono truncate">
-                Vibe coder · Free plan
+                {subline}
               </div>
             </div>
           </div>
@@ -164,14 +181,25 @@ export function ProfileMenu() {
 
           {/* Footer */}
           <div className="px-3 py-3 border-t border-border bg-surface/40">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border hover:border-destructive/50 hover:text-destructive transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Log out
-            </button>
+            {user ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border hover:border-destructive/50 hover:text-destructive transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Log out
+              </button>
+            ) : (
+              <Link
+                to="/welcome"
+                onClick={() => setOpen(false)}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                Log in or Sign up
+              </Link>
+            )}
           </div>
         </div>
       )}

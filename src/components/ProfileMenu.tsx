@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { User, History, Settings, LogOut, Sparkles, FileText, CreditCard } from "lucide-react";
+import { User, History, Settings, LogOut, Sparkles, FileText, CreditCard, LogIn } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 type HistoryItem = {
   id: string;
@@ -36,6 +38,7 @@ export function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (open) setHistory(loadHistory());
@@ -57,12 +60,22 @@ export function ProfileMenu() {
     };
   }, [open]);
 
-  const handleLogout = () => {
-    try {
-      sessionStorage.removeItem("plannr-entered");
-    } catch {}
+  const handleLogout = async () => {
+    try { await supabase.auth.signOut(); } catch {}
+    try { sessionStorage.removeItem("plannr-entered"); } catch {}
     window.location.href = "/welcome";
   };
+
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email?.split("@")[0] ||
+    "Guest builder";
+  const subline = user?.email || "Vibe coder · Free plan";
+  const avatarUrl =
+    (user?.user_metadata?.avatar_url as string | undefined) ||
+    (user?.user_metadata?.picture as string | undefined);
+
 
   return (
     <div ref={ref} className="relative">

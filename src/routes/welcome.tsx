@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Mail, Lock, User as UserIcon, Eye, EyeOff, Sparkles, Zap, Layers, Loader2 } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, Layers, Loader2 } from "lucide-react";
 import plannrLogo from "@/assets/plannr-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";

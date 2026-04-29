@@ -76,6 +76,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          // Apply persisted theme before paint to prevent FOUC
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('plannr-theme');if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark';}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>
         {children}

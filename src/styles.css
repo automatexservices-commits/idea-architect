@@ -420,41 +420,11 @@
   }
 
   /* ─────────────────────────────────────────────────────────────
-     Auth / Welcome page — dark dramatic stage
+     Auth / Welcome page — LIGHT theme, on-brand grid background.
+     Keeps the site's white aesthetic; adds "crazy" energy via
+     spinning conic glow, animated halos and floating orbs.
      ───────────────────────────────────────────────────────────── */
-  .auth-stage {
-    position: relative;
-    background:
-      radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.28 0.12 145 / 0.55), transparent 60%),
-      radial-gradient(ellipse 60% 50% at 50% 100%, oklch(0.32 0.14 160 / 0.40), transparent 60%),
-      linear-gradient(180deg, oklch(0.10 0.02 150) 0%, oklch(0.07 0.015 150) 100%);
-    overflow: hidden;
-    isolation: isolate;
-  }
-  .auth-stage::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(to right, oklch(0.62 0.22 145 / 0.10) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(0.62 0.22 145 / 0.10) 1px, transparent 1px);
-    background-size: 56px 56px;
-    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 90%);
-    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 90%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .auth-stage::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(oklch(1 0 0 / 0.10) 1px, transparent 1px);
-    background-size: 3px 3px;
-    opacity: 0.06;
-    mix-blend-mode: screen;
-    pointer-events: none;
-    z-index: 0;
-  }
+  @keyframes ring-spin { to { transform: rotate(360deg); } }
 
   .auth-orb {
     position: absolute;
@@ -464,45 +434,39 @@
     z-index: 0;
   }
   .auth-orb-a {
-    width: 520px; height: 520px;
-    background: oklch(0.78 0.27 145 / 0.55);
-    top: -160px; left: -120px;
+    width: 380px; height: 380px;
+    background: oklch(0.86 0.26 145 / 0.40);
+    top: -120px; right: -80px;
     animation: orb-drift-a 14s ease-in-out infinite;
   }
   .auth-orb-b {
-    width: 460px; height: 460px;
-    background: oklch(0.70 0.25 170 / 0.40);
-    bottom: -160px; right: -100px;
-    animation: orb-drift-b 18s ease-in-out infinite;
-  }
-  .auth-orb-c {
     width: 320px; height: 320px;
-    background: oklch(0.86 0.26 145 / 0.30);
-    top: 40%; left: 55%;
-    animation: orb-drift-a 20s ease-in-out infinite reverse;
+    background: oklch(0.70 0.22 170 / 0.32);
+    bottom: -100px; left: -60px;
+    animation: orb-drift-b 18s ease-in-out infinite;
   }
   @keyframes orb-drift-a {
     0%, 100% { transform: translate(0,0) scale(1); }
-    50%      { transform: translate(60px,-40px) scale(1.08); }
+    50%      { transform: translate(40px,-30px) scale(1.08); }
   }
   @keyframes orb-drift-b {
     0%, 100% { transform: translate(0,0) scale(1); }
-    50%      { transform: translate(-50px,30px) scale(1.10); }
+    50%      { transform: translate(-30px,20px) scale(1.10); }
   }
 
-  /* Glassmorphic auth card */
+  /* Light glassmorphic auth card */
   .auth-card {
     position: relative;
-    background: linear-gradient(160deg, oklch(0.16 0.02 150 / 0.72) 0%, oklch(0.10 0.02 150 / 0.78) 100%);
-    border: 1px solid oklch(0.78 0.27 145 / 0.22);
+    background: linear-gradient(160deg, oklch(1 0 0 / 0.92) 0%, oklch(0.985 0.005 150 / 0.88) 100%);
+    border: 1px solid oklch(0.78 0.27 145 / 0.30);
     border-radius: 1.75rem;
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
     box-shadow:
-      0 30px 80px -20px oklch(0 0 0 / 0.6),
-      0 0 0 1px oklch(1 0 0 / 0.04) inset,
-      0 0 60px -10px oklch(0.78 0.27 145 / 0.30);
-    color: oklch(0.97 0.01 150);
+      0 30px 80px -20px oklch(0.45 0.10 150 / 0.25),
+      0 0 0 1px oklch(1 0 0 / 0.6) inset,
+      0 0 60px -10px oklch(0.78 0.27 145 / 0.25);
+    color: var(--foreground);
     overflow: hidden;
   }
   /* Animated conic glow ring tracing the card border */
@@ -511,12 +475,12 @@
     position: absolute;
     inset: -1px;
     border-radius: inherit;
-    padding: 1px;
+    padding: 1.5px;
     background: conic-gradient(from 0deg,
       transparent 0deg,
       oklch(0.86 0.26 145 / 0.95) 60deg,
-      oklch(0.70 0.25 170 / 0.60) 120deg,
-      transparent 200deg,
+      oklch(0.70 0.25 170 / 0.70) 130deg,
+      transparent 220deg,
       transparent 360deg);
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
@@ -525,23 +489,39 @@
             mask-composite: exclude;
     animation: ring-spin 8s linear infinite;
     pointer-events: none;
-    opacity: 0.85;
+    opacity: 0.95;
   }
-  @keyframes ring-spin {
-    to { transform: rotate(360deg); }
+  /* Soft outer halo behind the card */
+  .auth-card-wrap {
+    position: relative;
+  }
+  .auth-card-wrap::before {
+    content: "";
+    position: absolute;
+    inset: -28px;
+    border-radius: 2.5rem;
+    background: conic-gradient(from 0deg,
+      oklch(0.86 0.26 145 / 0.45),
+      oklch(0.70 0.25 170 / 0.30),
+      oklch(0.95 0.18 145 / 0.40),
+      oklch(0.86 0.26 145 / 0.45));
+    filter: blur(40px);
+    opacity: 0.55;
+    z-index: -1;
+    animation: ring-spin 12s linear infinite;
+    pointer-events: none;
   }
 
-  /* Dark text adjustments inside auth card */
-  .auth-card .auth-muted { color: oklch(0.72 0.02 150); }
-  .auth-card .auth-divider { background-color: oklch(1 0 0 / 0.10); }
+  .auth-card .auth-muted { color: var(--muted-foreground); }
+  .auth-card .auth-divider { background-color: var(--border); }
 
-  /* Tab pill on dark */
+  /* Tab pill (light) */
   .auth-tabs {
-    background: oklch(0 0 0 / 0.35);
-    border: 1px solid oklch(1 0 0 / 0.08);
+    background: oklch(0.97 0.005 150);
+    border: 1px solid var(--border);
   }
 
-  /* Crazy Google button — glowing, animated gradient border */
+  /* Crazy Google button — spinning gradient halo behind white pill */
   .google-cta {
     position: relative;
     width: 100%;
@@ -557,56 +537,71 @@
     cursor: pointer;
     transition: transform 0.15s var(--transition-smooth), box-shadow 0.2s var(--transition-smooth);
     box-shadow:
-      0 10px 30px -10px oklch(0.78 0.27 145 / 0.55),
-      0 0 0 1px oklch(0.86 0.26 145 / 0.45);
+      0 10px 30px -10px oklch(0.78 0.27 145 / 0.45),
+      0 0 0 1.5px oklch(0.86 0.26 145 / 0.55);
     z-index: 1;
+    border: none;
   }
   .google-cta::before {
     content: "";
     position: absolute;
-    inset: -2px;
+    inset: -3px;
     border-radius: inherit;
     background: conic-gradient(from 0deg,
       oklch(0.86 0.26 145),
       oklch(0.70 0.25 170),
-      oklch(0.86 0.26 145),
       oklch(0.95 0.18 145),
       oklch(0.86 0.26 145));
-    filter: blur(8px);
-    opacity: 0.55;
+    filter: blur(10px);
+    opacity: 0.65;
     z-index: -1;
     animation: ring-spin 5s linear infinite;
   }
-  .google-cta:hover { transform: translateY(-1px); }
+  .google-cta:hover { transform: translateY(-1px); box-shadow: 0 14px 36px -10px oklch(0.78 0.27 145 / 0.55), 0 0 0 1.5px oklch(0.86 0.26 145 / 0.7); }
   .google-cta:active { transform: translateY(1px); }
   .google-cta:disabled { opacity: 0.65; cursor: not-allowed; }
 
-  /* Explore CTA — outline ghost on dark */
+  /* Explore CTA — light outline */
   .explore-cta {
     width: 100%;
     height: 3.25rem;
     border-radius: 9999px;
-    background: oklch(1 0 0 / 0.04);
-    border: 1.5px solid oklch(1 0 0 / 0.18);
-    color: oklch(0.97 0.01 150);
+    background: oklch(1 0 0);
+    border: 1.5px solid var(--border);
+    color: var(--foreground);
     font-weight: 600;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
     cursor: pointer;
-    transition: background 0.2s var(--transition-smooth), border-color 0.2s var(--transition-smooth), transform 0.15s;
+    transition: background 0.2s var(--transition-smooth), border-color 0.2s var(--transition-smooth), transform 0.15s, box-shadow 0.2s;
   }
   .explore-cta:hover {
-    background: oklch(0.78 0.27 145 / 0.12);
+    background: oklch(0.78 0.27 145 / 0.08);
     border-color: oklch(0.78 0.27 145 / 0.55);
+    box-shadow: 0 8px 24px -10px oklch(0.78 0.27 145 / 0.35);
   }
   .explore-cta:active { transform: translateY(1px); }
 
-  /* Floating ticker chips */
+  /* Floating chip animation */
   @keyframes chip-float {
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-6px); }
   }
   .chip-float { animation: chip-float 4s ease-in-out infinite; }
+
+  /* Sparkle dots that orbit / drift around the card for "crazy" energy */
+  @keyframes sparkle-drift {
+    0%, 100% { transform: translate(0,0); opacity: 0.8; }
+    50%      { transform: translate(8px,-12px); opacity: 1; }
+  }
+  .sparkle {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 9999px;
+    background: oklch(0.86 0.26 145);
+    box-shadow: 0 0 14px 2px oklch(0.86 0.26 145 / 0.7);
+    animation: sparkle-drift 4s ease-in-out infinite;
+  }
 }

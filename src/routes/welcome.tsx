@@ -22,14 +22,8 @@ type Mode = "login" | "signup";
 function WelcomePage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("signup");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
 
   // If already signed in, skip the gate and go to landing
   useEffect(() => {
@@ -50,7 +44,6 @@ function WelcomePage() {
 
   const onGoogle = async () => {
     setError(null);
-    setInfo(null);
     setGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
@@ -62,51 +55,10 @@ function WelcomePage() {
         return;
       }
       if (result.redirected) return; // browser will redirect
-      // Tokens set — go in
       enterApp();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Google sign-in failed.");
       setGoogleLoading(false);
-    }
-  };
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setInfo(null);
-    setSubmitting(true);
-
-    try {
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: { full_name: name.trim() || undefined },
-          },
-        });
-        if (error) throw error;
-        if (data.session) {
-          enterApp();
-        } else {
-          // email confirmation required
-          setInfo("Check your inbox to confirm your email, then log in.");
-          setMode("login");
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-        if (error) throw error;
-        enterApp();
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Something went wrong.";
-      setError(msg);
-    } finally {
-      setSubmitting(false);
     }
   };
 

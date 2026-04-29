@@ -215,6 +215,27 @@
     mix-blend-mode: multiply;
   }
 
+  /* Dark mode: brighten grid lines, switch spotlight to screen blend */
+  .dark .interactive-grid {
+    background-image:
+      linear-gradient(to right, oklch(0.86 0.26 145 / 0.42) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.86 0.26 145 / 0.42) 1px, transparent 1px),
+      linear-gradient(to right, oklch(1 0 0 / 0.10) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(1 0 0 / 0.10) 1px, transparent 1px);
+  }
+  .dark .interactive-grid::after {
+    background: radial-gradient(circle 300px at var(--mx) var(--my),
+      oklch(0.86 0.26 145 / 0.45) 0%,
+      oklch(0.86 0.26 145 / 0.18) 40%,
+      transparent 70%);
+    mix-blend-mode: screen;
+  }
+  .dark .bg-grid {
+    background-image:
+      linear-gradient(to right, oklch(1 0 0 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(1 0 0 / 0.06) 1px, transparent 1px);
+  }
+
   .gradient-text {
     background: var(--gradient-primary);
     -webkit-background-clip: text;

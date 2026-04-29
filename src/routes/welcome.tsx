@@ -178,107 +178,11 @@ function WelcomePage() {
             {mode === "login" ? "Log in with Google" : "Sign up with Google"}
           </button>
 
-          <div className="my-5 flex items-center gap-3">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-mono">or email</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          <form onSubmit={onSubmit} className="space-y-3">
-            {mode === "signup" && (
-              <div className="relative">
-                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  required
-                  placeholder="Full name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full h-12 pl-11 pr-4 rounded-full bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-              </div>
-            )}
-
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-12 pl-11 pr-4 rounded-full bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-              />
+          {error && (
+            <div className="mt-4 text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-xl px-3 py-2">
+              {error}
             </div>
-
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type={showPwd ? "text" : "password"}
-                required
-                minLength={6}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                placeholder={mode === "login" ? "Password" : "Create password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-12 pl-11 pr-11 rounded-full bg-surface border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPwd((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-muted-foreground hover:text-foreground"
-                aria-label={showPwd ? "Hide password" : "Show password"}
-              >
-                {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {error && (
-              <div className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-xl px-3 py-2">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="text-xs text-foreground bg-primary/10 border border-primary/30 rounded-xl px-3 py-2">
-                {info}
-              </div>
-            )}
-
-            <button type="submit" disabled={submitting} className="btn-3d w-full !rounded-full">
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {mode === "login" ? "Logging you in..." : "Creating account..."}
-                </>
-              ) : (
-                <>
-                  {mode === "login" ? "Log in" : "Sign up"}
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-
-            {mode === "login" && (
-              <div className="text-center pt-1">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setError(null); setInfo(null);
-                    if (!email.trim()) { setError("Enter your email above first."); return; }
-                    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-                      redirectTo: `${window.location.origin}/`,
-                    });
-                    if (error) setError(error.message);
-                    else setInfo("Password reset email sent — check your inbox.");
-                  }}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Forgot password?
-                </button>
-              </div>
-            )}
-          </form>
+          )}
 
           <div className="my-6 flex items-center gap-3">
             <div className="flex-1 h-px bg-border" />

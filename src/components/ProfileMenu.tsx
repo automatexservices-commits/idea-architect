@@ -154,7 +154,7 @@ export function ProfileMenu() {
               New spec
             </Link>
             <Link
-              to="/pricing"
+              to="/billing"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-surface transition-colors"
             >

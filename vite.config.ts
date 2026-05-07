@@ -4,6 +4,31 @@
 //     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import pkg from "@lovable.dev/vite-tanstack-config";
+import { loadEnv } from "vite";
 
-export default defineConfig();
+const { defineConfig } = pkg as any;
+
+export default defineConfig(({ mode }) => {
+	const env = loadEnv(mode, process.cwd(), "");
+	const target = env.VITE_INSFORGE_BASE_URL || env.VITE_INSFORGE_FUNCTIONS_URL || env.VITE_INSFORGE_URL;
+
+	return {
+		vite: {
+			server: {
+				port: 5173,
+				strictPort: true,
+				proxy: target
+					? {
+						"/functions": {
+							target,
+							changeOrigin: true,
+							secure: false,
+							rewrite: (path) => path.replace(/^\/functions/, ""),
+						},
+					}
+					: undefined,
+			},
+		},
+	};
+});

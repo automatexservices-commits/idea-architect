@@ -1,19 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 
-const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-3-flash-preview";
+// API Configuration
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_MODEL = "gpt-4o-mini";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
-async function callAI(messages: Array<{ role: string; content: string }>, tools?: any[], toolChoice?: any) {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+// Helper: Call OpenAI API
+async function callOpenAI(messages: Array<{ role: string; content: string }>, tools?: any[], toolChoice?: any) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
-  const body: any = { model: MODEL, messages };
+  const body: any = { model: OPENAI_MODEL, messages, temperature: 0.7 };
   if (tools) {
     body.tools = tools;
-    body.tool_choice = toolChoice;
+    body.tool_choice = toolChoice || "auto";
   }
 
-  const res = await fetch(AI_URL, {
+  const res = await fetch(OPENAI_API_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -23,12 +27,53 @@ async function callAI(messages: Array<{ role: string; content: string }>, tools?
   });
 
   if (!res.ok) {
-    if (res.status === 429) throw new Error("Rate limit exceeded. Please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Please add credits in workspace settings.");
     const t = await res.text();
-    throw new Error(`AI gateway error ${res.status}: ${t.slice(0, 200)}`);
+    throw new Error(`OpenAI error ${res.status}: ${t.slice(0, 200)}`);
   }
   return res.json();
+}
+
+// Helper: Call Gemini API
+async function callGemini(messages: Array<{ role: string; content: string }>, tools?: any[]) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
+
+  // Convert OpenAI format to Gemini format
+  const contents = messages.map((msg) => ({
+    role: msg.role === "user" ? "user" : "model",
+    parts: [{ text: msg.content }],
+  }));
+
+  const body: any = { contents };
+  if (tools && tools.length > 0) {
+    body.tools = [
+      {
+        functionDeclarations: tools.map((t) => t.function),
+      },
+    ];
+  }
+
+  const res = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Gemini error ${res.status}: ${t.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
+// Main routing: Use OpenAI for structured tasks (with tools), Gemini for simple generation
+async function callAI(messages: Array<{ role: string; content: string }>, tools?: any[], toolChoice?: any, provider: "openai" | "gemini" = "openai") {
+  if (provider === "gemini") {
+    return await callGemini(messages, tools);
+  }
+  return await callOpenAI(messages, tools, toolChoice);
 }
 
 // 1. Generate clarifying questions
@@ -82,9 +127,13 @@ export const generateQuestions = createServerFn({ method: "POST" })
         },
       ],
       { type: "function", function: { name: "ask_questions" } },
+      "openai"
     );
 
-    const args = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+    // Extract tool call from OpenAI response
+    const toolCall = result.choices[0].message.tool_calls?.[0];
+    if (!toolCall) throw new Error("Failed to generate questions");
+    const args = JSON.parse(toolCall.function.arguments);
     return args as { projectName: string; questions: Array<{ id: string; question: string; options: string[] }> };
   });
 
@@ -127,8 +176,12 @@ export const recommendStack = createServerFn({ method: "POST" })
         },
       ],
       { type: "function", function: { name: "recommend" } },
+      "openai"
     );
-    return JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+
+    const toolCall = result.choices[0].message.tool_calls?.[0];
+    if (!toolCall) throw new Error("Failed to recommend stack");
+    return JSON.parse(toolCall.function.arguments);
   });
 
 // 3. Generate all docs — modeled on the Vivek Mishra "Stop Vibe Coding Without a Plan"
@@ -294,8 +347,11 @@ export const generateDocument = createServerFn({ method: "POST" })
         role: "user",
         content: `Project: ${data.projectName}\nIdea: ${data.idea}\n\nUser answers:\n${Object.entries(data.answers).map(([q, a]) => `• ${q}: ${a}`).join("\n")}\n\nStack: ${JSON.stringify(data.stack)}\n\nTask: ${prompt}`,
       },
-    ]);
-    return { content: result.choices[0].message.content as string };
+    ], undefined, undefined, "openai");
+    
+    const content = result.choices[0].message.content;
+    if (!content) throw new Error("Failed to generate document");
+    return { content };
   });
 
 // 4. Generate folder structure JSON
@@ -343,6 +399,10 @@ export const generateFolderStructure = createServerFn({ method: "POST" })
         },
       ],
       { type: "function", function: { name: "structure" } },
+      "openai"
     );
-    return JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+
+    const toolCall = result.choices[0].message.tool_calls?.[0];
+    if (!toolCall) throw new Error("Failed to generate folder structure");
+    return JSON.parse(toolCall.function.arguments);
   });

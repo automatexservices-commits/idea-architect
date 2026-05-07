@@ -44,7 +44,7 @@ function TermsPage() {
           </Section>
 
           <Section title="6. Payments">
-            Paid plans are billed in INR via the listed payment methods. Plans renew automatically unless cancelled before the renewal date. See our Refund Policy for refund terms.
+            Paid plans are billed in INR via Razorpay checkout and any other payment methods shown at checkout. Plans renew automatically unless cancelled before the renewal date. All payments are final unless a separate written agreement says otherwise or applicable law requires a different outcome.
           </Section>
 
           <Section title="7. Disclaimers">

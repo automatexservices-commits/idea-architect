@@ -28,7 +28,8 @@ function PrivacyPage() {
               <li><b>Account data</b> — email, display name, hashed password.</li>
               <li><b>Prompts & specs</b> — the inputs you submit and the outputs we generate.</li>
               <li><b>Usage data</b> — pages visited, features used, errors encountered (anonymised).</li>
-              <li><b>Payment data</b> — handled by our payment partners; we never store card numbers.</li>
+              <li><b>Payment data</b> — handled by Razorpay; we never store card numbers or UPI secrets.</li>
+              <li><b>Email delivery data</b> — if we send verification or transactional emails, a delivery provider may process message metadata.</li>
             </ul>
           </Section>
 
@@ -38,6 +39,10 @@ function PrivacyPage() {
 
           <Section title="AI processing">
             Your prompts are sent to AI model providers strictly to generate your spec. We do not use your prompts to train foundation models without explicit opt-in.
+          </Section>
+
+          <Section title="Third-party services">
+            We use service providers such as InsForge for authentication and backend operations, Razorpay for payments, and potentially an email delivery provider for account-related messages. Each provider processes only the data needed to provide its service.
           </Section>
 
           <Section title="Data retention">

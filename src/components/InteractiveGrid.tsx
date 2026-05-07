@@ -62,7 +62,7 @@ export function InteractiveGrid() {
     <div
       ref={ref}
       aria-hidden="true"
-      className="interactive-grid pointer-events-none fixed inset-0 -z-10"
+      className="interactive-grid pointer-events-none fixed inset-0 z-0"
     />
   );
 }

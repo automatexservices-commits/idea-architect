@@ -1,16 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { ArrowRight, ArrowLeft, Loader2, Sparkles, Download, FileText, Check, RefreshCw } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FileTree, type TreeNode } from "@/components/FileTree";
 import { VibePlatforms } from "@/components/VibePlatforms";
-import { useServerFn } from "@tanstack/react-start";
 import {
-  generateQuestions,
-  recommendStack,
-  generateDocument,
-  generateFolderStructure,
-} from "@/lib/specai-server.functions";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getSession, refreshSessionToken } from "@/features/auth";
+import { useAuth } from "@/features/auth";
+import { getInsforgeBackendUrls, requestInsforgeJson } from "@/lib/insforge-backend";
 import JSZip from "jszip";
 
 export const Route = createFileRoute("/build")({
@@ -46,13 +52,271 @@ type Docs = {
   folderStructure: { root: string; tree: TreeNode[] };
 };
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
+type BackendProjectResponse = {
+  success: boolean;
+  project: { id: string; title: string; idea: string };
+  documents?: Array<{
+    document_type: string;
+    latest_version?: { content_markdown?: string; structured_data?: Record<string, unknown> } | null;
+  }>;
+  downloadUrl?: string;
+};
+
+type BackendGenerateResponse = {
+  success: boolean;
+  version?: { content_markdown?: string; structured_data?: Record<string, unknown> } | null;
+  designPreview?: { content_markdown?: string; structured_data?: Record<string, unknown> } | null;
+  downloadUrl?: string;
+};
+
+type GenerationProgressItem = {
+  label: string;
+  status: "loading" | "done";
+};
+
+type UsageState = {
+  role: "free" | "pro";
+  limit: number;
+  used: number;
+  remaining: number;
+  blocked: boolean;
+};
+
+class BackendApiError extends Error {
+  status: number;
+  body: unknown;
+
+  constructor(message: string, status: number, body: unknown) {
+    super(message);
+    this.name = "BackendApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
+type SessionLike = { accessToken: string; user?: { id?: string } | null } | null;
+
+async function resolveBackendSession(override?: SessionLike) {
+  if (override?.accessToken) {
+    return override;
+  }
+
+  let session = await getSession();
+  if (!session?.accessToken || !session.user) {
+    const refreshed = await refreshSessionToken();
+    session = refreshed ? { accessToken: refreshed.accessToken, user: refreshed.user } : null;
+  }
+  return session;
+}
+
+async function backendJson<T>(path: string, init: RequestInit = {}, sessionOverride?: SessionLike) {
+  let session = await resolveBackendSession(sessionOverride);
+
+  if (!session?.accessToken) {
+    throw new Error("Sign in / login to generate your spec");
+  }
+
+  console.log("[build] backend request", path, { userId: session.user?.id, hasToken: Boolean(session.accessToken) });
+
+  let { response, body } = await requestInsforgeJson<T>(path, init, {
+    Authorization: `Bearer ${session.accessToken}`,
+    "Content-Type": "application/json",
+  });
+
+  if (response.status === 401) {
+    const refreshed = await refreshSessionToken();
+    if (refreshed?.accessToken) {
+      session = { accessToken: refreshed.accessToken, user: refreshed.user };
+      console.log("[build] backend request refreshed token", path, { userId: session.user?.id });
+      ({ response, body } = await requestInsforgeJson<T>(path, init, {
+        Authorization: `Bearer ${session.accessToken}`,
+        "Content-Type": "application/json",
+      }));
+    }
+  }
+
+  if (!response.ok) {
+    const message = body && typeof body === "object" && "error" in body
+      ? String((body as any).error ?? `Request failed (${response.status})`)
+      : `Request failed (${response.status})`;
+    throw new BackendApiError(message, response.status, body);
+  }
+
+  return body as T;
+}
+
+async function requestQuestions(idea: string, specs: string, session?: SessionLike) {
+  return backendJson<{ projectName: string; questions: Question[] }>("/generate/questions", {
+    method: "POST",
+    body: JSON.stringify({ idea, specs }),
+  }, session);
+}
+
+async function requestStack(idea: string, answers: Record<string, string>, session?: SessionLike) {
+  return backendJson<Stack>("/generate/stack", {
+    method: "POST",
+    body: JSON.stringify({ idea, answers }),
+  }, session);
+}
+
+async function requestUsageState(session?: SessionLike) {
+  return backendJson<UsageState>("/usage", {}, session);
+}
+
+async function downloadBlobFromUrl(url: string, filename: string, session?: SessionLike) {
+  const resolvedSession = await resolveBackendSession(session);
+  if (!resolvedSession?.accessToken) {
+    throw new Error("Please sign in to download files.");
+  }
+  console.log("[build] download", url);
+
+  let response = await fetch(url, {
+    headers: { Authorization: `Bearer ${resolvedSession.accessToken}` },
+  });
+
+  if (response.status === 401) {
+    const refreshed = await refreshSessionToken();
+    if (refreshed?.accessToken) {
+      response = await fetch(url, {
+        headers: { Authorization: `Bearer ${refreshed.accessToken}` },
+      });
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Download failed (${response.status})`);
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = url;
+  link.href = objectUrl;
   link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  requestAnimationFrame(() => {
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  });
+}
+
+async function downloadBlob(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  requestAnimationFrame(() => {
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  });
+}
+
+function formatFrontendErrorMessage(message: unknown) {
+  const m = typeof message === "string" ? message : String(message ?? "");
+  if (/daily generation limit exceeded|daily generation limit|free limit reached|LIMIT_EXCEEDED|limit exceeded/i.test(m)) {
+    return "You hit the free limit (3 specs). Upgrade to generate more specs";
+  }
+  return m;
+}
+
+function deriveProjectTitle(idea: string) {
+  const words = idea
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 4);
+  const title = words.map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+  return (title || "Untitled Project").slice(0, 80);
+}
+
+function buildFallbackDesignSystem(projectName: string, idea: string, stack: Stack | null, prd: string, systemDesign: string, architecture: string) {
+  const stackLine = stack ? `${stack.frontend} / ${stack.backend} / ${stack.database}` : "Not specified";
+  const planningInputs = [prd, systemDesign, architecture].filter(Boolean).length;
+  return [
+    `# ${projectName} Design System`,
+    "",
+    "## 0. Metadata",
+    `- Project: ${projectName}`,
+    `- Idea: ${idea}`,
+    `- Stack: ${stackLine}`,
+    "",
+    "---",
+    "",
+    "## 1. Executive Summary",
+    "A complete design document should define the product's core experience, the system boundaries, the implementation constraints, and the API contract that keeps every screen and backend path aligned.",
+    "",
+    "## 2. Problem Statement",
+    "- The current output is too thin and does not provide enough guidance for a real handoff.",
+    "- The design document should be comprehensive enough to support engineering, QA, and future iteration.",
+    "- The document must stay aligned with the generated PRD, system design, and architecture outputs.",
+    "",
+    "## 3. Goals & Non-Goals",
+    "### Goals",
+    "- Produce a richer, structured design system document.",
+    "- Keep the template sections complete and easy to scan.",
+    "- Ground the design in the project idea and stack recommendation.",
+    "",
+    "### Non-Goals",
+    "- Pixel-perfect brand systems.",
+    "- Interactive design token management.",
+    "",
+    "## 4. Success Metrics",
+    "| Metric | Current | Target | Measurement Method |",
+    "|------|--------|--------|--------------------|",
+    "| Template coverage | Partial | Full | Manual review |",
+    "| Section completeness | Thin | Rich | Checklist review |",
+    "| Handoff clarity | Low | High | Reviewer feedback |",
+    "| Spec consistency | Inconsistent | Aligned | Compare with PRD and architecture |",
+    "",
+    "## 5. System Overview",
+    `The design output should stay aligned to the generated PRD, system design, and architecture documents for ${projectName}.`,
+    "",
+    "## 6. Detailed Architecture",
+    `The doc should explain how the project moves from idea to structured output across the browser UI, backend generation flow, and ZIP export. It should stay aligned with the PRD, System Design, and Architecture outputs.`,
+    "",
+    `Planning inputs available: ${planningInputs}/3.`,
+    "",
+    "## 7. Data Design",
+    "- projects: source idea, title, and stack recommendation",
+    "- documents: generated markdown and structured data",
+    "- document_versions: immutable history for each document",
+    "",
+    "## 8. API Design (Strict Contract)",
+    "- POST /project",
+    "- POST /generate/questions",
+    "- POST /generate/stack",
+    "- POST /generate/prd",
+    "- POST /generate/system-design",
+    "- POST /generate/architecture",
+    "- GET /download/:id",
+    "",
+  ].join("\n");
+}
+
+function buildDerivedDocs(projectName: string, idea: string, stack: Stack | null, prd: string, systemDesign: string, architecture: string, designSystem?: string): Partial<Docs> {
+  return {
+    prd,
+    srs: systemDesign,
+    architecture,
+    designSystem: designSystem || buildFallbackDesignSystem(projectName, idea, stack, prd, systemDesign, architecture),
+    apiSpec: `# API Specification\n\n## Summary\n\nAPI contract for ${projectName}.\n\n## Included Routes\n- POST /project\n- POST /generate/prd\n- POST /generate/system-design\n- POST /generate/architecture\n- GET /download/:id\n`,
+    readme: `# ${projectName}\n\n## Overview\n\nSpec bundle for ${projectName}.\n\n## Included\n- PRD\n- System Design\n- Architecture\n`,
+    folderStructure: {
+      root: `${slug(projectName)}/`,
+      tree: [
+        { name: "docs", type: "folder", children: [{ name: "PRD.md", type: "file" }, { name: "SRS.md", type: "file" }, { name: "ARCHITECTURE.md", type: "file" }] },
+        { name: "design", type: "folder", children: [{ name: "DESIGN_SYSTEM.md", type: "file" }] },
+        { name: "api", type: "folder", children: [{ name: "API_SPEC.md", type: "file" }] },
+        { name: "structure", type: "folder", children: [{ name: "FOLDER_STRUCTURE.md", type: "file" }, { name: "FOLDER_STRUCTURE.json", type: "file" }] },
+        { name: "README.md", type: "file" },
+      ],
+    },
+  };
 }
 
 const DOC_FILES = [
@@ -61,11 +325,12 @@ const DOC_FILES = [
   { key: "architecture", name: "ARCHITECTURE.md", folder: "docs", label: "System Architecture" },
   { key: "designSystem", name: "DESIGN_SYSTEM.md", folder: "design", label: "Design System" },
   { key: "apiSpec", name: "API_SPEC.md", folder: "api", label: "API Specification" },
-  { key: "folderStructure", name: "FOLDER_STRUCTURE.json", folder: "structure", label: "Folder Structure" },
+  { key: "folderStructure", name: "FOLDER_STRUCTURE.md", folder: "structure", label: "Folder Structure" },
   { key: "readme", name: "README.md", folder: "", label: "README" },
 ] as const;
 
 function BuildPage() {
+  const { session: authSession, loading: authLoading } = useAuth();
   const [step, setStep] = useState<Step>("idea");
   const [idea, setIdea] = useState("");
   const [specs, setSpecs] = useState("");
@@ -76,25 +341,54 @@ function BuildPage() {
   const [docs, setDocs] = useState<Partial<Docs>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState<string[]>([]);
+  const [progress, setProgress] = useState<GenerationProgressItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<string>("README.md");
+  const [downloadUrl, setDownloadUrl] = useState<string>("");
+  const [limitPopupOpen, setLimitPopupOpen] = useState(false);
+  const backendSession = authSession?.accessToken ? { accessToken: authSession.accessToken, user: authSession.user } : null;
 
-  const genQuestions = useServerFn(generateQuestions);
-  const recStack = useServerFn(recommendStack);
-  const genDoc = useServerFn(generateDocument);
-  const genFolder = useServerFn(generateFolderStructure);
+  const refreshUsage = async () => {
+    try {
+      const next = await requestUsageState(backendSession);
+      return next;
+    } catch (error) {
+      if (error instanceof BackendApiError && error.status === 401) {
+        return null;
+      }
+      console.error("[build] usage fetch failed", error);
+      return null;
+    } finally {
+    }
+  };
+
+  useEffect(() => {
+    if (authLoading || !authSession?.accessToken) return;
+    void refreshUsage();
+  }, [authLoading, authSession?.accessToken]);
 
   const submitIdea = async () => {
     if (!idea.trim()) return;
+
+    // Check usage and show limit popup immediately (step 1) if blocked.
+    try {
+      const nextUsage = await refreshUsage();
+      if (nextUsage?.blocked) {
+        setLimitPopupOpen(true);
+        return;
+      }
+    } catch (err) {
+      // If usage check failed (likely not signed in), allow the flow to continue.
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const res = await genQuestions({ data: { idea, specs } });
+      const res = await requestQuestions(idea, specs, backendSession);
       setProjectName(res.projectName);
       setQuestions(res.questions);
       setStep("questions");
     } catch (e: any) {
-      setError(e.message);
+      setError(formatFrontendErrorMessage(e?.message ?? e));
     } finally {
       setLoading(false);
     }
@@ -108,7 +402,7 @@ function BuildPage() {
       questions.forEach((q) => {
         answerMap[q.question] = answers[q.id] || "(not specified)";
       });
-      const res = await recStack({ data: { idea, answers: answerMap } });
+      const res = await requestStack(idea, answerMap, backendSession);
       setStack(res);
       setStep("stack");
     } catch (e: any) {
@@ -121,63 +415,124 @@ function BuildPage() {
   const startGeneration = async () => {
     if (!stack) return;
     setStep("generating");
+    setDocs({});
+    setDownloadUrl("");
+    setSelectedFile("README.md");
     setProgress([]);
     setError(null);
-
-    const answerMap: Record<string, string> = {};
-    questions.forEach((q) => {
-      answerMap[q.question] = answers[q.id] || "(not specified)";
-    });
+    console.log("[build] generate clicked", { projectName, idea });
 
     try {
-      const tasks = [
-        { key: "prd" as const, label: "Writing PRD" },
-        { key: "srs" as const, label: "Drafting SRS" },
-        { key: "architecture" as const, label: "Designing architecture" },
-        { key: "designSystem" as const, label: "Crafting design system" },
-        { key: "apiSpec" as const, label: "Specifying API" },
-        { key: "readme" as const, label: "Writing README" },
-      ];
+      const title = projectName.trim() || deriveProjectTitle(idea);
 
-      const newDocs: Partial<Docs> = {};
-      for (const t of tasks) {
-        setProgress((p) => [...p, t.label]);
-        const r = await genDoc({ data: { docType: t.key, projectName, idea, answers: answerMap, stack } });
-        (newDocs as any)[t.key] = r.content;
-        setDocs({ ...newDocs });
-      }
+      setProgress([{ label: "Creating project", status: "loading" }]);
+      const created = await backendJson<BackendProjectResponse>("/project", {
+        method: "POST",
+        body: JSON.stringify({ title, idea, description: specs || undefined, stackRecommendation: stack }),
+      }, backendSession);
 
-      setProgress((p) => [...p, "Building folder structure"]);
-      const fs = await genFolder({ data: { projectName, stack } });
-      newDocs.folderStructure = fs;
-      setDocs({ ...newDocs });
+      setProjectName(created.project.title);
 
-      setProgress((p) => [...p, "Done"]);
+      setProgress([
+        { label: "Creating project", status: "done" },
+        { label: "Writing PRD", status: "loading" },
+      ]);
+      const prd = await backendJson<BackendGenerateResponse>("/generate/prd", {
+        method: "POST",
+        body: JSON.stringify({ projectId: created.project.id }),
+      }, backendSession);
+
+      setProgress([
+        { label: "Creating project", status: "done" },
+        { label: "Writing PRD", status: "done" },
+        { label: "Writing System Design", status: "loading" },
+      ]);
+      const systemDesign = await backendJson<BackendGenerateResponse>("/generate/system-design", {
+        method: "POST",
+        body: JSON.stringify({ projectId: created.project.id }),
+      }, backendSession);
+
+      setProgress([
+        { label: "Creating project", status: "done" },
+        { label: "Writing PRD", status: "done" },
+        { label: "Writing System Design", status: "done" },
+        { label: "Writing Architecture", status: "loading" },
+      ]);
+      const architecture = await backendJson<BackendGenerateResponse>("/generate/architecture", {
+        method: "POST",
+        body: JSON.stringify({ projectId: created.project.id }),
+      }, backendSession);
+
+      const nextDocs = buildDerivedDocs(
+        created.project.title,
+        created.project.idea,
+        stack,
+        prd.version?.content_markdown || "",
+        systemDesign.version?.content_markdown || "",
+        architecture.version?.content_markdown || "",
+        architecture.designPreview?.content_markdown || "",
+      );
+      setDocs(nextDocs);
+      setDownloadUrl(created.downloadUrl || getInsforgeBackendUrls(`/download/${created.project.id}?scope=project&format=zip`)[0]);
+
+      await refreshUsage();
+
+      setProgress((p) => [...p.map((item) => ({ ...item, status: "done" as const })), { label: "Done", status: "done" }]);
       setTimeout(() => setStep("output"), 600);
     } catch (e: any) {
-      setError(e.message);
+      console.error("[build] generation failed", e);
+      // Do not show limit popup here - checks are performed at step 1
+      setError(formatFrontendErrorMessage(e instanceof Error ? e.message : String(e)));
       setStep("stack");
     }
   };
 
   const downloadZip = async () => {
-    const zip = new JSZip();
-    const folder = zip.folder(slug(projectName))!;
+    console.log("[build] zip download start", { projectName, hasDocs: Boolean(docs.folderStructure), hasBackendDownload: Boolean(downloadUrl) });
 
-    DOC_FILES.forEach((f) => {
-      const content = (docs as any)[f.key];
-      if (!content) return;
-      const data = f.key === "folderStructure" ? JSON.stringify(content, null, 2) : content;
-      const path = f.folder ? `${f.folder}/${f.name}` : f.name;
-      folder.file(path, data);
+    if (downloadUrl) {
+      await downloadBlobFromUrl(downloadUrl, `${slug(projectName)}.zip`, backendSession);
+      return;
+    }
+
+    const zip = new JSZip();
+    const root = zip.folder(slug(projectName)) ?? zip;
+    const fileMap: Record<string, string> = {
+      "docs/PRD.md": docs.prd || "",
+      "docs/SRS.md": docs.srs || "",
+      "docs/ARCHITECTURE.md": docs.architecture || "",
+      "design/DESIGN_SYSTEM.md": docs.designSystem || "",
+      "api/API_SPEC.md": docs.apiSpec || "",
+      "structure/FOLDER_STRUCTURE.md": docs.folderStructure ? `# Folder Structure\n\n\`\`\`json\n${JSON.stringify(docs.folderStructure, null, 2)}\n\`\`\`` : "",
+      "structure/FOLDER_STRUCTURE.json": JSON.stringify(docs.folderStructure || {}, null, 2),
+      "README.md": docs.readme || "",
+    };
+
+    Object.entries(fileMap).forEach(([path, content]) => {
+      root.file(path, content);
     });
 
     const blob = await zip.generateAsync({ type: "blob" });
-    downloadBlob(blob, `${slug(projectName)}.zip`);
+    await downloadBlob(blob, `${slug(projectName)}.zip`);
   };
 
   return (
     <div className="min-h-screen flex flex-col">
+      <AlertDialog open={limitPopupOpen} onOpenChange={setLimitPopupOpen}>
+        <AlertDialogContent className="rounded-3xl border-border bg-background p-6 shadow-elevated">
+          <AlertDialogHeader>
+            <AlertDialogTitle>You hit the free limit (3 specs)</AlertDialogTitle>
+              <AlertDialogDescription>Upgrade to generate more specs</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Link to="/pricing">Upgrade</Link>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <SiteHeader />
 
       <main className="flex-1">
@@ -211,7 +566,13 @@ function BuildPage() {
         )}
 
         {step === "stack" && stack && (
-          <StackStep stack={stack} setStack={setStack} onBack={() => setStep("questions")} onNext={startGeneration} />
+          <StackStep
+            stack={stack}
+            setStack={setStack}
+            onBack={() => setStep("questions")}
+            onNext={startGeneration}
+            locked={loading}
+          />
         )}
 
         {step === "generating" && <GeneratingStep progress={progress} />}
@@ -230,7 +591,10 @@ function BuildPage() {
               setAnswers({});
               setDocs({});
               setStack(null);
+              setDownloadUrl("");
+              setSelectedFile("README.md");
             }}
+            downloadLocked={false}
           />
         )}
       </main>
@@ -465,7 +829,7 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
   );
 }
 
-function StackStep({ stack, setStack, onBack, onNext }: any) {
+function StackStep({ stack, setStack, onBack, onNext, locked }: any) {
   const fields: { key: keyof Stack; label: string }[] = [
     { key: "frontend", label: "Frontend" },
     { key: "backend", label: "Backend" },
@@ -507,16 +871,17 @@ function StackStep({ stack, setStack, onBack, onNext }: any) {
         </button>
         <button
           onClick={onNext}
+          disabled={locked}
           className="btn-3d flex-1"
         >
-          Generate documentation <ArrowRight className="w-4 h-4" />
+          <>Generate Project <ArrowRight className="w-4 h-4" /></>
         </button>
       </div>
     </section>
   );
 }
 
-function GeneratingStep({ progress }: { progress: string[] }) {
+function GeneratingStep({ progress }: { progress: GenerationProgressItem[] }) {
   return (
     <section className="mx-auto max-w-2xl px-6 py-24 animate-fade-up">
       <div className="text-center mb-12">
@@ -529,18 +894,14 @@ function GeneratingStep({ progress }: { progress: string[] }) {
 
       <div className="rounded-2xl border border-border bg-surface/50 p-6 space-y-3 font-mono text-sm">
         {progress.map((p, i) => {
-          const isLast = i === progress.length - 1 && p !== "Done";
-          const isDone = p === "Done";
           return (
             <div key={i} className="flex items-center gap-3 animate-fade-up">
-              {isDone ? (
+              {p.status === "done" ? (
                 <Check className="w-4 h-4 text-primary" />
-              ) : isLast ? (
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
               ) : (
-                <Check className="w-4 h-4 text-primary" />
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
               )}
-              <span className={isLast ? "text-foreground" : "text-muted-foreground"}>{p}{isLast && "..."}</span>
+              <span className={p.status === "loading" ? "text-foreground" : "text-muted-foreground"}>{p.label}{p.status === "loading" && "..."}</span>
             </div>
           );
         })}
@@ -549,7 +910,7 @@ function GeneratingStep({ progress }: { progress: string[] }) {
   );
 }
 
-function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownload, onRestart }: any) {
+function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownload, onRestart, downloadLocked }: any) {
   // Build virtual tree
   const virtualTree: TreeNode[] = [
     {
@@ -574,7 +935,7 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
     {
       name: "structure",
       type: "folder",
-      children: [{ name: "FOLDER_STRUCTURE.json", type: "file" }],
+      children: [{ name: "FOLDER_STRUCTURE.md", type: "file" }, { name: "FOLDER_STRUCTURE.json", type: "file" }],
     },
     { name: "README.md", type: "file" },
   ];
@@ -585,6 +946,7 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
     "ARCHITECTURE.md": docs.architecture,
     "DESIGN_SYSTEM.md": docs.designSystem,
     "API_SPEC.md": docs.apiSpec,
+    "FOLDER_STRUCTURE.md": docs.folderStructure ? `# Folder Structure\n\n\`\`\`json\n${JSON.stringify(docs.folderStructure, null, 2)}\n\`\`\`` : "",
     "FOLDER_STRUCTURE.json": JSON.stringify(docs.folderStructure, null, 2),
     "README.md": docs.readme,
   };
@@ -605,9 +967,11 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
           </button>
           <button
             onClick={onDownload}
+            type="button"
+            disabled={downloadLocked}
             className="btn-3d btn-3d-sm"
           >
-            <Download className="w-4 h-4" /> Download ZIP
+            {downloadLocked ? "Limit reached" : <><Download className="w-4 h-4" /> Download ZIP</>}
           </button>
         </div>
       </div>

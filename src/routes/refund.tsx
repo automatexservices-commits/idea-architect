@@ -5,38 +5,38 @@ import { SiteFooter } from "@/components/SiteFooter";
 export const Route = createFileRoute("/refund")({
   head: () => ({
     meta: [
-      { title: "Refund Policy — PLANNR" },
-      { name: "description", content: "Our refund and cancellation policy for paid plans." },
-      { property: "og:title", content: "Refund Policy — PLANNR" },
-      { property: "og:description", content: "Clear, fair refunds. Cancel anytime." },
+      { title: "Billing Policy - PLANNR" },
+      { name: "description", content: "Billing, cancellation, and payment handling for PLANNR." },
+      { property: "og:title", content: "Billing Policy - PLANNR" },
+      { property: "og:description", content: "Billing and cancellation details for PLANNR plans." },
     ],
   }),
-  component: RefundPage,
+  component: BillingPolicyPage,
 });
 
-function RefundPage() {
+function BillingPolicyPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1">
-        <article className="mx-auto max-w-3xl px-6 py-16">
+        <article className="mx-auto max-w-3xl px-6 py-16 prose-content">
           <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Last updated: April 2026</span>
-          <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight mt-2 mb-8">Refund Policy</h1>
+          <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight mt-2 mb-8">Billing Policy</h1>
 
-          <Section title="7-day money back">
-            If you're not satisfied with a paid plan, request a full refund within 7 days of purchase — no questions asked.
-          </Section>
-
-          <Section title="How to request a refund">
-            Email <a href="mailto:billing@plannr.app" className="text-primary hover:underline">billing@plannr.app</a> from your account email with your transaction ID. We process refunds within 5–7 business days back to the original payment method.
+          <Section title="No refunds">
+            PLANNR does not offer refunds on subscription or custom plan purchases unless we state otherwise in writing or unless applicable law requires it.
           </Section>
 
           <Section title="Cancellations">
-            You can cancel anytime from your account. Your plan stays active until the end of the current billing cycle.
+            You can cancel recurring plans from your account or by contacting support. Access stays active until the end of the current billing cycle.
           </Section>
 
-          <Section title="Exceptions">
-            Refunds may be denied if there is evidence of abuse — for example, generating thousands of specs and then requesting a refund.
+          <Section title="Payment processing">
+            Payments are handled by Razorpay. We do not store card numbers, UPI credentials, or other sensitive payment details on our servers.
+          </Section>
+
+          <Section title="Billing help">
+            If a charge looks incorrect, email <a href="mailto:billing@plannr.app" className="text-primary hover:underline">billing@plannr.app</a> and include your transaction ID.
           </Section>
         </article>
       </main>

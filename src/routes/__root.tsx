@@ -2,8 +2,10 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts, useNavigate, useLo
 import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
+import plannrFavicon from "@/assets/plannr-logo.png";
 import { InteractiveGrid } from "@/components/InteractiveGrid";
 import { SplashIntro } from "@/components/SplashIntro";
+import { AuthProvider, useAuth } from "@/features/auth";
 
 /**
  * Gate: on first session visit, redirect "/" -> "/welcome" so the user
@@ -58,6 +60,8 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+        { rel: "icon", href: plannrFavicon },
+        { rel: "apple-touch-icon", href: plannrFavicon },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -86,12 +90,29 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const { pathname } = useLocation();
+  const showIntroChrome = pathname === "/" || pathname === "/welcome";
+
   return (
-    <>
-      <SplashIntro />
-      <WelcomeGate />
-      <InteractiveGrid />
-      <Outlet />
-    </>
+    <AuthProvider>
+      <AuthGate>
+        {showIntroChrome ? <SplashIntro /> : null}
+        <WelcomeGate />
+        <InteractiveGrid />
+        <div className="relative z-10">
+          <Outlet />
+        </div>
+      </AuthGate>
+    </AuthProvider>
   );
+}
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <div className="min-h-screen bg-background" aria-busy="true" aria-live="polite" />;
+  }
+
+  return <>{children}</>;
 }

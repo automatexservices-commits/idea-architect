@@ -121,9 +121,11 @@
 
   .bg-grid {
     background-image:
-      linear-gradient(to right, oklch(0.5 0.05 150 / 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(0.5 0.05 150 / 0.06) 1px, transparent 1px);
-    background-size: 48px 48px;
+      linear-gradient(to right, oklch(0.44 0.06 150 / 0.22) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.44 0.06 150 / 0.22) 1px, transparent 1px),
+      linear-gradient(to right, oklch(0.78 0.22 145 / 0.10) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.78 0.22 145 / 0.10) 1px, transparent 1px);
+    background-size: 60px 60px, 60px 60px, 240px 240px, 240px 240px;
   }
 
   /* Antigravity-style cursor-reactive grid background.
@@ -205,6 +207,22 @@
     50% { transform: translate(20px, -30px) scale(1.05); }
   }
   .animate-float-slow { animation: float-slow 12s ease-in-out infinite; }
+
+  @keyframes ribbon-sway {
+    0%, 100% { transform: translateY(0) rotate(18deg) scale(1); opacity: 0.88; }
+    50% { transform: translateY(-14px) rotate(23deg) scale(1.04); opacity: 1; }
+  }
+  .animate-ribbon-sway { animation: ribbon-sway 10s ease-in-out infinite; }
+
+  .particle-dot {
+    position: absolute;
+    height: 10px;
+    width: 10px;
+    border-radius: 9999px;
+    background: oklch(0.78 0.27 145);
+    box-shadow: 0 0 28px oklch(0.78 0.27 145 / 0.55);
+    animation: float-slow 6s ease-in-out infinite;
+  }
 
   .hover-lift {
     transition: transform 0.3s var(--transition-smooth), box-shadow 0.3s var(--transition-smooth);

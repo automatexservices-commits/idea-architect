@@ -121,82 +121,81 @@ function ProfilePage() {
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 md:px-6 py-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
-          {/* LEFT SIDEBAR */}
-          <aside className="lg:sticky lg:top-24 lg:self-start rounded-2xl border border-border bg-surface/50 backdrop-blur p-3 h-fit">
-            {/* user card */}
-            <div className="px-3 py-3 flex items-center gap-3 border-b border-border/60 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-glow ring-2 ring-primary/30 overflow-hidden flex items-center justify-center shrink-0">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 py-6 grid grid-cols-1 lg:grid-cols-[96px_1fr] gap-5">
+          {/* LEFT SIDEBAR — narrow icon rail */}
+          <aside className="lg:sticky lg:top-24 lg:self-start rounded-2xl border border-border bg-surface/50 backdrop-blur p-2 h-fit flex flex-col items-stretch gap-1">
+            {/* Home */}
+            <Link
+              to="/"
+              className="group flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent transition-all"
+            >
+              <span className="w-9 h-9 rounded-lg bg-background/70 flex items-center justify-center group-hover:bg-primary/15 group-hover:text-primary transition-colors">
+                <Plus className="w-4 h-4" />
+              </span>
+              Home
+            </Link>
+
+            <div className="h-px bg-border/60 mx-2 my-1" />
+
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const active = tab === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => navigate({ search: { tab: item.key } })}
+                  className={`group flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl text-[11px] font-medium transition-all leading-tight text-center ${
+                    active
+                      ? "bg-primary/10 text-foreground border border-primary/40 shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
+                  }`}
+                >
+                  <span className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                    active ? "bg-primary/20 text-primary" : "bg-background/70 text-muted-foreground group-hover:text-primary"
+                  }`}>
+                    <Icon className="w-4 h-4" />
+                  </span>
+                  {item.label}
+                </button>
+              );
+            })}
+
+            <div className="h-px bg-border/60 mx-2 my-1" />
+
+            {user ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="group flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl text-[11px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <span className="w-9 h-9 rounded-lg bg-background/70 flex items-center justify-center group-hover:bg-destructive/15 transition-colors">
+                  <LogOut className="w-4 h-4" />
+                </span>
+                Log out
+              </button>
+            ) : (
+              <Link
+                to="/welcome"
+                className="group flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors"
+              >
+                <span className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+                  <User className="w-4 h-4" />
+                </span>
+                Sign in
+              </Link>
+            )}
+
+            {/* avatar at bottom */}
+            <div className="mt-1 pt-2 border-t border-border/60 flex flex-col items-center gap-1 py-2">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-glow ring-2 ring-primary/30 overflow-hidden flex items-center justify-center">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-5 h-5 text-primary-foreground" />
+                  <User className="w-4 h-4 text-primary-foreground" />
                 )}
               </div>
-              <div className="min-w-0">
-                <div className="font-display font-semibold text-sm truncate">{displayName}</div>
-                <div className="text-[10px] font-mono text-muted-foreground truncate">{email}</div>
-              </div>
-            </div>
-
-            <nav className="flex flex-col gap-1">
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
-                const active = tab === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => navigate({ search: { tab: item.key } })}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
-                      active
-                        ? "bg-primary/15 text-foreground border border-primary/40 shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-surface border border-transparent"
-                    }`}
-                  >
-                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-                      active ? "bg-primary/20 text-primary" : "bg-background/60 text-muted-foreground group-hover:text-primary"
-                    }`}>
-                      <Icon className="w-4 h-4" />
-                    </span>
-                    {item.label}
-                  </button>
-                );
-              })}
-            </nav>
-
-            <div className="mt-3 pt-3 border-t border-border/60 space-y-1">
-              <Link
-                to="/build"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
-              >
-                <span className="w-8 h-8 rounded-lg bg-background/60 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                </span>
-                New spec
-              </Link>
-              {user ? (
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                >
-                  <span className="w-8 h-8 rounded-lg bg-background/60 flex items-center justify-center">
-                    <LogOut className="w-4 h-4" />
-                  </span>
-                  Log out
-                </button>
-              ) : (
-                <Link
-                  to="/welcome"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
-                >
-                  <span className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                    <User className="w-4 h-4" />
-                  </span>
-                  Sign in
-                </Link>
-              )}
+              <div className="text-[10px] font-medium truncate max-w-[80px] text-center" title={displayName}>{displayName}</div>
             </div>
           </aside>
 

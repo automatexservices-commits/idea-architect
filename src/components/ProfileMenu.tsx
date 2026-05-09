@@ -146,6 +146,15 @@ export function ProfileMenu() {
           {/* Quick links */}
           <div className="px-2 py-2 border-t border-border mt-2">
             <Link
+              to="/profile"
+              search={{ tab: "overview" }}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-surface transition-colors"
+            >
+              <User className="w-4 h-4 text-primary" />
+              Profile dashboard
+            </Link>
+            <Link
               to="/build"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-surface transition-colors"
@@ -154,7 +163,8 @@ export function ProfileMenu() {
               New spec
             </Link>
             <Link
-              to="/billing"
+              to="/profile"
+              search={{ tab: "billing" }}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-surface transition-colors"
             >
@@ -162,21 +172,23 @@ export function ProfileMenu() {
               Billing & plans
             </Link>
             <Link
-              to="/docs"
+              to="/profile"
+              search={{ tab: "docs" }}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-surface transition-colors"
             >
               <FileText className="w-4 h-4 text-primary" />
               Docs
             </Link>
-            <button
-              type="button"
+            <Link
+              to="/profile"
+              search={{ tab: "settings" }}
               onClick={() => setOpen(false)}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-surface transition-colors text-left"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-surface transition-colors"
             >
               <Settings className="w-4 h-4 text-primary" />
               Settings
-            </button>
+            </Link>
           </div>
 
           {/* Footer */}

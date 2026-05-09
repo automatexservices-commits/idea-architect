@@ -82,8 +82,8 @@ function loadPlan(): PlanKey {
 }
 
 const NAV_ITEMS = [
-  { key: "overview", label: "Overview", icon: User },
-  { key: "billing", label: "Billing & Plan", icon: CreditCard },
+  { key: "overview", label: "Profile", icon: User },
+  { key: "billing", label: "Billing", icon: CreditCard },
   { key: "history", label: "History", icon: History },
   { key: "settings", label: "Settings", icon: Settings },
   { key: "docs", label: "Docs", icon: FileText },

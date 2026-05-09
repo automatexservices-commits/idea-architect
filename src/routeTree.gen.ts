@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RefundRouteImport } from './routes/refund'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ExamplesRouteImport } from './routes/examples'
@@ -35,6 +36,11 @@ const TermsRoute = TermsRouteImport.update({
 const RefundRoute = RefundRouteImport.update({
   id: '/refund',
   path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/examples': typeof ExamplesRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/examples': typeof ExamplesRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/examples': typeof ExamplesRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
+  '/profile': typeof ProfileRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/examples'
     | '/pricing'
     | '/privacy'
+    | '/profile'
     | '/refund'
     | '/terms'
     | '/welcome'
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/examples'
     | '/pricing'
     | '/privacy'
+    | '/profile'
     | '/refund'
     | '/terms'
     | '/welcome'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/examples'
     | '/pricing'
     | '/privacy'
+    | '/profile'
     | '/refund'
     | '/terms'
     | '/welcome'
@@ -181,6 +193,7 @@ export interface RootRouteChildren {
   ExamplesRoute: typeof ExamplesRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
+  ProfileRoute: typeof ProfileRoute
   RefundRoute: typeof RefundRoute
   TermsRoute: typeof TermsRoute
   WelcomeRoute: typeof WelcomeRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/refund'
       fullPath: '/refund'
       preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -285,6 +305,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExamplesRoute: ExamplesRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
+  ProfileRoute: ProfileRoute,
   RefundRoute: RefundRoute,
   TermsRoute: TermsRoute,
   WelcomeRoute: WelcomeRoute,

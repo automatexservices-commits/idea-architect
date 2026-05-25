@@ -672,97 +672,132 @@
 }
 
 @layer utilities {
-  /* Brutal mode — smokey green fire with red ember accents around the idea box */
-  @keyframes brutal-flame {
-    0%, 100% {
-      filter: blur(14px) saturate(1.4);
-      opacity: 0.85;
-      transform: translateY(0) scaleY(1) skewX(0deg);
-    }
-    25% {
-      filter: blur(18px) saturate(1.6);
-      opacity: 1;
-      transform: translateY(-3px) scaleY(1.08) skewX(-1.5deg);
-    }
-    50% {
-      filter: blur(12px) saturate(1.3);
-      opacity: 0.9;
-      transform: translateY(2px) scaleY(0.96) skewX(1deg);
-    }
-    75% {
-      filter: blur(20px) saturate(1.7);
-      opacity: 1;
-      transform: translateY(-2px) scaleY(1.05) skewX(-0.5deg);
-    }
-  }
-  @keyframes brutal-smoke {
-    0%   { transform: translate(0,0) scale(1); opacity: 0.55; }
-    50%  { transform: translate(6px,-10px) scale(1.08); opacity: 0.85; }
-    100% { transform: translate(-4px,-22px) scale(1.15); opacity: 0; }
-  }
-  @keyframes brutal-ember {
-    0%, 100% { box-shadow:
-      0 0 24px 4px oklch(0.72 0.28 145 / 0.65),
-      0 0 60px 14px oklch(0.55 0.22 150 / 0.45),
-      0 0 90px 22px oklch(0.45 0.18 30 / 0.28);
-    }
-    50% { box-shadow:
-      0 0 36px 8px oklch(0.78 0.30 145 / 0.85),
-      0 0 80px 22px oklch(0.60 0.24 150 / 0.55),
-      0 0 120px 32px oklch(0.55 0.24 28 / 0.40);
-    }
-  }
+  /* ============================================================
+     STARTUP MODE — cinematic green smoky fire (reference-matched)
+     ============================================================ */
 
-  .brutal-wrap { position: relative; isolation: isolate; }
-
-  /* Outer flame aura — only on edges thanks to padding + mask */
-  .brutal-wrap::before {
-    content: "";
+  .brutal-stage {
     position: absolute;
-    inset: -14px;
-    border-radius: 1rem;
-    padding: 14px;
+    inset: -28px -20px -70px -20px;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 0;
+  }
+
+  /* Soft base glow hugging the bottom edge */
+  .brutal-base {
+    position: absolute;
+    left: 0; right: 0; bottom: 50px;
+    height: 140px;
     background:
-      conic-gradient(from 0deg,
-        oklch(0.78 0.28 145) 0deg,
-        oklch(0.55 0.22 150) 60deg,
-        oklch(0.40 0.18 155) 120deg,
-        oklch(0.55 0.24 28) 180deg,
-        oklch(0.45 0.20 35) 240deg,
-        oklch(0.60 0.24 145) 300deg,
-        oklch(0.78 0.28 145) 360deg);
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-            mask-composite: exclude;
-    animation: brutal-flame 1.6s ease-in-out infinite;
-    pointer-events: none;
-    z-index: -1;
+      radial-gradient(60% 100% at 50% 100%,
+        oklch(0.78 0.32 145 / 0.55) 0%,
+        oklch(0.62 0.28 148 / 0.30) 40%,
+        transparent 75%),
+      radial-gradient(40% 80% at 20% 100%,
+        oklch(0.55 0.24 30 / 0.18) 0%,
+        transparent 70%),
+      radial-gradient(40% 80% at 80% 100%,
+        oklch(0.55 0.24 30 / 0.18) 0%,
+        transparent 70%);
+    filter: blur(10px);
+    animation: brutal-base-pulse 2.4s ease-in-out infinite;
+    mix-blend-mode: screen;
   }
-  /* Outer glow / ember pulse */
-  .brutal-wrap::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: 1rem;
-    animation: brutal-ember 2.4s ease-in-out infinite;
-    pointer-events: none;
-    z-index: -2;
+  @keyframes brutal-base-pulse {
+    0%, 100% { opacity: 0.85; transform: scaleY(1); }
+    50%      { opacity: 1;    transform: scaleY(1.06); }
   }
 
-  /* Smoke wisps rising from the top edge */
+  /* Rim light hugging the textarea border */
+  .brutal-rim {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.30 145 / 0.55),
+      0 0 24px 2px oklch(0.72 0.30 145 / 0.45),
+      0 30px 80px -10px oklch(0.65 0.28 148 / 0.55),
+      0 60px 120px -20px oklch(0.55 0.24 30 / 0.20);
+    animation: brutal-rim-pulse 1.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes brutal-rim-pulse {
+    0%, 100% { filter: brightness(1); }
+    50%      { filter: brightness(1.35); }
+  }
+
+  /* Big soft smoke clouds drifting upward */
   .brutal-smoke {
     position: absolute;
-    bottom: 100%;
-    width: 22px; height: 22px;
+    bottom: 30px;
+    width: 200px; height: 200px;
     border-radius: 9999px;
-    background: radial-gradient(circle,
-      oklch(0.72 0.22 145 / 0.55) 0%,
-      oklch(0.50 0.18 150 / 0.25) 50%,
-      transparent 75%);
-    filter: blur(6px);
-    animation: brutal-smoke 2.6s ease-out infinite;
-    pointer-events: none;
+    background: radial-gradient(circle at 50% 60%,
+      oklch(0.68 0.22 148 / 0.55) 0%,
+      oklch(0.50 0.18 150 / 0.28) 35%,
+      oklch(0.35 0.14 152 / 0.10) 65%,
+      transparent 80%);
+    filter: blur(24px);
+    will-change: transform, opacity;
+    animation: brutal-smoke-rise var(--dur, 5s) ease-out infinite;
+    animation-delay: var(--delay, 0s);
+    mix-blend-mode: screen;
+    opacity: 0;
+    transform: translate(-50%, 30px) scale(0.6);
+  }
+  @keyframes brutal-smoke-rise {
+    0%   { transform: translate(-50%, 30px) scale(0.6); opacity: 0; }
+    15%  { opacity: 0.85; }
+    60%  { opacity: 0.55; }
+    100% { transform: translate(calc(-50% + var(--drift, 20px)), -200px) scale(1.5); opacity: 0; }
+  }
+
+  /* Bright ember sparks flying up with drift */
+  .brutal-ember {
+    position: absolute;
+    bottom: 40px;
+    width: var(--size, 3px);
+    height: var(--size, 3px);
+    border-radius: 9999px;
+    background: var(--ember-color, oklch(0.92 0.28 145));
+    box-shadow:
+      0 0 6px 1px var(--ember-color, oklch(0.85 0.30 145)),
+      0 0 14px 2px oklch(0.72 0.28 145 / 0.7);
+    will-change: transform, opacity;
+    animation: brutal-ember-fly var(--dur, 2.4s) cubic-bezier(.22,.61,.36,1) infinite;
+    animation-delay: var(--delay, 0s);
+    opacity: 0;
+  }
+  @keyframes brutal-ember-fly {
+    0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+    10%  { opacity: 1; }
+    60%  { opacity: 0.9; }
+    100% { transform: translate(var(--drift, 12px), var(--rise, -200px)) scale(0.3); opacity: 0; }
+  }
+
+  /* Flickering core flame tongues right on the bottom edge */
+  .brutal-flame {
+    position: absolute;
+    bottom: 38px;
+    width: var(--w, 90px);
+    height: var(--h, 70px);
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at 50% 100%,
+      oklch(0.95 0.25 145 / 0.85) 0%,
+      oklch(0.80 0.30 145 / 0.55) 25%,
+      oklch(0.60 0.26 148 / 0.30) 55%,
+      transparent 80%);
+    filter: blur(8px);
+    will-change: transform, opacity;
+    animation: brutal-flame-flicker var(--dur, 1.4s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+    mix-blend-mode: screen;
+  }
+  @keyframes brutal-flame-flicker {
+    0%, 100% { transform: translateX(-50%) scaleY(1)    skewX(-2deg); opacity: 0.7; }
+    25%      { transform: translateX(-50%) scaleY(1.25) skewX(2deg);  opacity: 1;   }
+    50%      { transform: translateX(-50%) scaleY(0.85) skewX(-1deg); opacity: 0.8; }
+    75%      { transform: translateX(-50%) scaleY(1.15) skewX(3deg);  opacity: 0.95;}
   }
 }

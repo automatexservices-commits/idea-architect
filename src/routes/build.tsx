@@ -279,7 +279,7 @@ function Stepper({ current }: { current: Step }) {
   );
 }
 
-function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
+function IdeaStep({ idea, setIdea, specs, setSpecs, brutal, setBrutal, onNext, loading }: any) {
   return (
     <section className="mx-auto max-w-3xl px-6 py-16 animate-fade-up">
       <div className="text-center mb-10">
@@ -289,14 +289,62 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
 
       <div className="space-y-4">
         <div>
-          <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2 block">Your idea</label>
-          <textarea
-            value={idea}
-            onChange={(e) => setIdea(e.target.value)}
-            placeholder="A mobile app that helps remote teams run async standups using AI summaries..."
-            rows={5}
-            className="w-full px-4 py-3 rounded-xl bg-surface border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-          />
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Your idea</label>
+            <button
+              type="button"
+              onClick={() => setBrutal(!brutal)}
+              aria-pressed={brutal}
+              className={`group flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono uppercase tracking-wider transition-all ${
+                brutal
+                  ? "border-[oklch(0.72_0.28_145)] bg-[oklch(0.72_0.28_145/0.12)] text-[oklch(0.72_0.28_145)] shadow-[0_0_18px_oklch(0.72_0.28_145/0.5)]"
+                  : "border-border bg-surface text-muted-foreground hover:text-foreground"
+              }`}
+              title="Startup mode — 10x more brutal output"
+            >
+              <Flame className={`w-3.5 h-3.5 ${brutal ? "animate-pulse" : ""}`} />
+              Startup mode
+              <span
+                className={`relative inline-flex h-4 w-7 rounded-full border transition-colors ${
+                  brutal ? "border-[oklch(0.72_0.28_145)] bg-[oklch(0.72_0.28_145/0.3)]" : "border-border bg-background"
+                }`}
+              >
+                <span
+                  className={`absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full transition-all ${
+                    brutal ? "left-3.5 bg-[oklch(0.85_0.28_145)] shadow-[0_0_8px_oklch(0.78_0.28_145)]" : "left-0.5 bg-muted-foreground"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+
+          <div className={brutal ? "brutal-wrap" : "relative"}>
+            {brutal && (
+              <>
+                <span className="brutal-smoke" style={{ left: "12%", animationDelay: "0s" }} />
+                <span className="brutal-smoke" style={{ left: "32%", animationDelay: "0.6s" }} />
+                <span className="brutal-smoke" style={{ left: "55%", animationDelay: "1.1s" }} />
+                <span className="brutal-smoke" style={{ left: "78%", animationDelay: "0.3s" }} />
+                <span className="brutal-smoke" style={{ left: "90%", animationDelay: "1.5s" }} />
+              </>
+            )}
+            <textarea
+              value={idea}
+              onChange={(e) => setIdea(e.target.value)}
+              placeholder={brutal ? "Unleash it. No filters. We'll tear it apart and rebuild it 10x sharper..." : "A mobile app that helps remote teams run async standups using AI summaries..."}
+              rows={5}
+              className={`relative w-full px-4 py-3 rounded-xl bg-surface border focus:outline-none focus:ring-2 transition-all resize-none ${
+                brutal
+                  ? "border-[oklch(0.72_0.28_145/0.6)] focus:border-[oklch(0.72_0.28_145)] focus:ring-[oklch(0.72_0.28_145/0.3)]"
+                  : "border-border focus:border-primary focus:ring-primary/20"
+              }`}
+            />
+          </div>
+          {brutal && (
+            <p className="mt-2 text-[11px] font-mono uppercase tracking-wider text-[oklch(0.72_0.28_145)] flex items-center gap-1.5">
+              <Flame className="w-3 h-3" /> Brutal mode armed — output will be 10× sharper, zero fluff
+            </p>
+          )}
         </div>
 
         <details className="group">

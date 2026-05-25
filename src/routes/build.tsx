@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, ArrowLeft, Loader2, Sparkles, Download, FileText, Check, RefreshCw } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2, Sparkles, Download, FileText, Check, RefreshCw, Flame } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FileTree, type TreeNode } from "@/components/FileTree";
 import { VibePlatforms } from "@/components/VibePlatforms";

@@ -197,7 +197,7 @@ function BuildPage() {
           </div>
         )}
 
-        {step === "idea" && <IdeaStep idea={idea} setIdea={setIdea} specs={specs} setSpecs={setSpecs} onNext={submitIdea} loading={loading} />}
+        {step === "idea" && <IdeaStep idea={idea} setIdea={setIdea} specs={specs} setSpecs={setSpecs} brutal={brutal} setBrutal={setBrutal} onNext={submitIdea} loading={loading} />}
 
         {step === "questions" && (
           <QuestionsStep

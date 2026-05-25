@@ -69,6 +69,7 @@ function BuildPage() {
   const [step, setStep] = useState<Step>("idea");
   const [idea, setIdea] = useState("");
   const [specs, setSpecs] = useState("");
+  const [brutal, setBrutal] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});

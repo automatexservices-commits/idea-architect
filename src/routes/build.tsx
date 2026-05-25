@@ -685,3 +685,107 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
     </section>
   );
 }
+
+/* ------------------------------------------------------------------
+ * BrutalFire — cinematic green smoky fire rendered around the idea box.
+ * Deterministic pseudo-random values keep SSR + client hydration identical.
+ * ------------------------------------------------------------------ */
+function BrutalFire() {
+  // Tiny deterministic PRNG so SSR === client render
+  const rand = (seed: number) => {
+    const x = Math.sin(seed * 9301 + 49297) * 233280;
+    return x - Math.floor(x);
+  };
+
+  const embers = Array.from({ length: 60 }, (_, i) => {
+    const r1 = rand(i + 1);
+    const r2 = rand(i + 73);
+    const r3 = rand(i + 211);
+    const r4 = rand(i + 419);
+    const reddish = r4 > 0.82;
+    return {
+      left: `${r1 * 100}%`,
+      size: `${2 + r2 * 4}px`,
+      dur: `${1.8 + r3 * 2.4}s`,
+      delay: `${r1 * 3}s`,
+      drift: `${(r2 - 0.5) * 80}px`,
+      rise: `${-(140 + r3 * 160)}px`,
+      color: reddish
+        ? "oklch(0.78 0.24 35)"
+        : r4 > 0.5
+        ? "oklch(0.95 0.28 145)"
+        : "oklch(0.85 0.30 148)",
+    };
+  });
+
+  const smokes = Array.from({ length: 10 }, (_, i) => {
+    const r1 = rand(i + 17);
+    const r2 = rand(i + 113);
+    const r3 = rand(i + 307);
+    return {
+      left: `${5 + r1 * 90}%`,
+      dur: `${4 + r2 * 3}s`,
+      delay: `${r3 * 4}s`,
+      drift: `${(r1 - 0.5) * 80}px`,
+    };
+  });
+
+  const flames = Array.from({ length: 8 }, (_, i) => {
+    const r1 = rand(i + 53);
+    const r2 = rand(i + 199);
+    return {
+      left: `${8 + i * 12 + (r1 - 0.5) * 6}%`,
+      w: `${70 + r1 * 60}px`,
+      h: `${50 + r2 * 50}px`,
+      dur: `${1.1 + r2 * 0.9}s`,
+      delay: `${r1 * 1.5}s`,
+    };
+  });
+
+  return (
+    <div className="brutal-stage" aria-hidden="true">
+      <span className="brutal-rim" />
+      <span className="brutal-base" />
+      {flames.map((f, i) => (
+        <span
+          key={`f-${i}`}
+          className="brutal-flame"
+          style={{
+            left: f.left,
+            ["--w" as any]: f.w,
+            ["--h" as any]: f.h,
+            ["--dur" as any]: f.dur,
+            ["--delay" as any]: f.delay,
+          }}
+        />
+      ))}
+      {smokes.map((s, i) => (
+        <span
+          key={`s-${i}`}
+          className="brutal-smoke"
+          style={{
+            left: s.left,
+            ["--dur" as any]: s.dur,
+            ["--delay" as any]: s.delay,
+            ["--drift" as any]: s.drift,
+          }}
+        />
+      ))}
+      {embers.map((e, i) => (
+        <span
+          key={`e-${i}`}
+          className="brutal-ember"
+          style={{
+            left: e.left,
+            ["--size" as any]: e.size,
+            ["--dur" as any]: e.dur,
+            ["--delay" as any]: e.delay,
+            ["--drift" as any]: e.drift,
+            ["--rise" as any]: e.rise,
+            ["--ember-color" as any]: e.color,
+          }}
+        />
+      ))}
+    </div>
+  );
+}

@@ -318,24 +318,16 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, brutal, setBrutal, onNext, l
             </button>
           </div>
 
-          <div className={brutal ? "brutal-wrap" : "relative"}>
-            {brutal && (
-              <>
-                <span className="brutal-smoke" style={{ left: "12%", animationDelay: "0s" }} />
-                <span className="brutal-smoke" style={{ left: "32%", animationDelay: "0.6s" }} />
-                <span className="brutal-smoke" style={{ left: "55%", animationDelay: "1.1s" }} />
-                <span className="brutal-smoke" style={{ left: "78%", animationDelay: "0.3s" }} />
-                <span className="brutal-smoke" style={{ left: "90%", animationDelay: "1.5s" }} />
-              </>
-            )}
+          <div className="relative">
+            {brutal && <BrutalFire />}
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
               placeholder={brutal ? "Unleash it. No filters. We'll tear it apart and rebuild it 10x sharper..." : "A mobile app that helps remote teams run async standups using AI summaries..."}
               rows={5}
-              className={`relative w-full px-4 py-3 rounded-xl bg-surface border focus:outline-none focus:ring-2 transition-all resize-none ${
+              className={`relative z-10 w-full px-4 py-3 rounded-xl bg-surface border focus:outline-none focus:ring-2 transition-all resize-none ${
                 brutal
-                  ? "border-[oklch(0.72_0.28_145/0.6)] focus:border-[oklch(0.72_0.28_145)] focus:ring-[oklch(0.72_0.28_145/0.3)]"
+                  ? "border-[oklch(0.78_0.30_145/0.7)] focus:border-[oklch(0.85_0.30_145)] focus:ring-[oklch(0.72_0.28_145/0.35)]"
                   : "border-border focus:border-primary focus:ring-primary/20"
               }`}
             />

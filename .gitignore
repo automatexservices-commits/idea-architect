@@ -50,4 +50,8 @@ dist-ssr
 
 #files
 .env
+.env.*
+!.env.example
+!.env.sample
 
+tmp-browser-profile/

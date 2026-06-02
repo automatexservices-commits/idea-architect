@@ -1,16 +1,9 @@
-import { createClient } from "npm:@insforge/sdk";
-import JSZip from "npm:jszip";
-import {
-  renderApiSpecMarkdown,
-  renderArchitectureMarkdown,
-  renderDesignMarkdown,
-  renderFolderStructureMarkdown,
-  renderPrdMarkdown,
-  renderReadmeMarkdown,
-  renderSystemDesignMarkdown,
-} from "./spec-templates.ts";
+import { createClient } from "@insforge/sdk";
+import JSZip from "jszip";
 
-type DocKind = "prd" | "system_design" | "architecture";
+type DocKind = "prd" | "srs" | "system_design" | "architecture" | "design-system" | "api-spec" | "readme";
+type SupplementalDocKind = "folder-structure";
+type GeneratedDocKind = DocKind | SupplementalDocKind;
 type DownloadFormat = "md" | "pdf" | "zip";
 
 type AuthUser = {
@@ -52,7 +45,6 @@ type DocumentVersionRecord = {
   document_id: string;
   version_number: number;
   content_markdown: string;
-  structured_data: Record<string, unknown>;
   file_format: "md" | "pdf" | "json";
   file_name: string;
   checksum: string;
@@ -109,6 +101,128 @@ type BillingPaymentRecord = {
   updated_at: string;
 };
 
+type MinimalProject = Pick<ProjectRecord, "title" | "idea" | "description" | "stack_recommendation">;
+
+function projectStackLine(project: MinimalProject) {
+  const stack = project.stack_recommendation ?? {};
+  const frontend = String(stack.frontend ?? "React");
+  const backend = String(stack.backend ?? "Node.js");
+  const database = String(stack.database ?? "PostgreSQL");
+  const auth = String(stack.auth ?? "InsForge Auth");
+  return `${frontend} / ${backend} / ${database} / ${auth}`;
+}
+
+function documentKindLabel(kind: GeneratedDocKind) {
+  switch (kind) {
+    case "prd":
+      return "PRD";
+    case "srs":
+      return "SRS";
+    case "system_design":
+      return "system design";
+    case "architecture":
+      return "architecture";
+    case "design-system":
+      return "design system";
+    case "api-spec":
+      return "API spec";
+    case "readme":
+      return "README";
+    case "folder-structure":
+      return "folder structure";
+  }
+}
+
+function sanitizeMarkdownOutput(text: string) {
+  const cleaned = text
+    .replace(/\r\n/g, "\n")
+    .replace(/^\uFEFF/, "")
+    .replace(/^```(?:markdown|md)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+  return cleaned;
+}
+
+function logMarkdownDebug(label: string, text: string) {
+  console.log(label, text.slice(0, 2000));
+}
+
+function validateGeneratedMarkdown(kind: GeneratedDocKind, text: string) {
+  const trimmed = text.trim();
+
+  if (!trimmed) {
+    throw new Error(`${documentKindLabel(kind)} generation returned empty output`);
+  }
+
+  if (trimmed.length < 100) {
+    throw new Error(`${documentKindLabel(kind)} output is too short to be useful`);
+  }
+
+  if (/lorem ipsum|replace me|insert here|\[YOUR COMPANY\]|\[INSERT\]/i.test(trimmed)) {
+    throw new Error(`${documentKindLabel(kind)} contains unfilled template placeholders`);
+  }
+}
+
+function buildRawMarkdownPrompt(
+  kind: GeneratedDocKind,
+  project: MinimalProject,
+  context?: string,
+) {
+  const purposeMap: Record<GeneratedDocKind, string> = {
+    prd: "Capture what this product is, who it's for, what problem it solves, and what success looks like â€” in the voice of someone who deeply understands this specific idea.",
+    srs: "Write out the concrete behaviors this system must have. Be specific to this product, not generic.",
+    system_design: "Describe how this specific system is structured, what the moving parts are, and why those choices make sense for this product.",
+    architecture: "Show the shape of this codebase and infrastructure â€” specific to the stack and scale of this product.",
+    "design-system": "Document the visual and interaction language that fits this product's tone, audience, and use case.",
+    "api-spec": "Define the API surface that this product actually needs, with the real endpoints, data shapes, and auth flows.",
+    readme: "Write an orientation document for someone joining this project â€” cover what it is, how to run it, and how to contribute.",
+    "folder-structure": "Show a practical, opinionated folder layout that fits this product's architecture.",
+  };
+
+  const contextLines = [
+    `Product: ${project.title}`,
+    `What it does: ${project.idea}`,
+    project.description ? `More detail: ${project.description}` : null,
+    `Stack: ${projectStackLine(project)}`,
+    context ? `\nAdditional context: ${context}` : null,
+  ];
+
+  return [
+    contextLines.filter(Boolean).join("\n"),
+    "",
+    purposeMap[kind],
+    "",
+    "Write in markdown. Use whatever structure makes sense for this specific product â€” don't default to standard PM doc sections unless they genuinely fit. Be concrete and specific; generic startup language is a failure mode.",
+  ].join("\n");
+}
+
+async function callRawMarkdownDocumentAi(
+  client: BackendContext["client"],
+  kind: GeneratedDocKind,
+  project: MinimalProject,
+  context?: string,
+) {
+  const prompt = buildRawMarkdownPrompt(kind, project, context);
+  const system = "You are a sharp technical writer helping a founder articulate their product clearly. Write like someone who deeply understands this specific product, not like someone filling out a template. Avoid generic sections and startup boilerplate.";
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      console.log(`[${kind}] InsForge google/gemini-2.5-flash-lite attempt=${attempt}`);
+      const rawMarkdown = await callInsForgeAiChat(client, system, prompt, "google/gemini-2.5-flash-lite", 6000, 0.8);
+      const markdown = sanitizeMarkdownOutput(rawMarkdown);
+      validateGeneratedMarkdown(kind, markdown);
+      return { markdown, provider: "InsForge", model: "google/gemini-2.5-flash-lite" };
+    } catch (error) {
+      lastError = error;
+      console.log(`[${kind}] attempt ${attempt} failed`, error instanceof Error ? error.message : String(error));
+      if (attempt === 2) break;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(`${documentKindLabel(kind)} generation failed`);
+}
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -116,12 +230,33 @@ const CORS_HEADERS = {
   "Access-Control-Max-Age": "86400",
 };
 
-const AI_MODEL = "anthropic/claude-sonnet-4.5";
 const PROMPT_VERSION = "v1";
 const ROUTE_PREFIX = "/backend";
-const OPENAI_MODEL = "gpt-4o-mini";
-const GEMINI_MODEL = "gemini-2.0-flash";
-const OPENROUTER_MODEL = "openai/gpt-4o-mini";
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const rateLimitBuckets = new Map<string, number[]>();
+
+function consumeRateLimit(key: string, limit: number) {
+  const now = Date.now();
+  const recent = (rateLimitBuckets.get(key) ?? []).filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+
+  if (recent.length >= limit) {
+    const oldest = recent[0] ?? now;
+    const retryAfterSeconds = Math.max(Math.ceil((RATE_LIMIT_WINDOW_MS - (now - oldest)) / 1000), 1);
+    rateLimitBuckets.set(key, recent);
+    return { allowed: false as const, retryAfterSeconds };
+  }
+
+  recent.push(now);
+  rateLimitBuckets.set(key, recent);
+  return { allowed: true as const, retryAfterSeconds: 0 };
+}
+
+function rateLimitResponse(route: string) {
+  return jsonResponse(429, {
+    success: false,
+    error: `Too many requests for ${route}. Please try again in a minute.`,
+  });
+}
 
 function jsonResponse(status: number, payload: unknown) {
   return new Response(JSON.stringify(payload, null, 2), {
@@ -258,7 +393,14 @@ function toPlainRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-async function createRazorpayOrder(plan: RazorpayPlan) {
+async function createRazorpayOrder(
+  plan: RazorpayPlan,
+  options?: {
+    amountInInr?: number;
+    description?: string;
+    receiptPrefix?: string;
+  },
+) {
   const keyId = Deno.env.get("RAZORPAY_KEY_ID");
   const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
 
@@ -267,12 +409,17 @@ async function createRazorpayOrder(plan: RazorpayPlan) {
   }
 
   const config = planConfig(plan);
-  if (!config.amountInInr || config.amountInInr <= 0) {
+  const amountInInr =
+    plan === "custom" && options?.amountInInr && options.amountInInr > 0
+      ? options.amountInInr
+      : config.amountInInr;
+
+  if (!amountInInr || amountInInr <= 0) {
     throw new Error(`Missing configured amount for ${plan} plan.`);
   }
 
-  const amount = Math.round(config.amountInInr * 100);
-  const receipt = `plannr-${plan}-${Date.now()}`;
+  const amount = Math.round(amountInInr * 100);
+  const receipt = `${options?.receiptPrefix ?? `plannr-${plan}`}-${Date.now()}`;
   const auth = btoa(`${keyId}:${keySecret}`);
 
   const response = await fetch("https://api.razorpay.com/v1/orders", {
@@ -288,6 +435,7 @@ async function createRazorpayOrder(plan: RazorpayPlan) {
       notes: {
         plan,
         product: "PLANNR",
+        amountInInr,
       },
     }),
   });
@@ -303,7 +451,7 @@ async function createRazorpayOrder(plan: RazorpayPlan) {
     amount,
     currency: config.currency,
     name: config.name,
-    description: config.description,
+    description: options?.description ?? config.description,
     image: config.image,
     keyId,
     receipt,
@@ -326,6 +474,12 @@ function titleForKind(kind: DocKind) {
       return "System Design";
     case "architecture":
       return "Architecture";
+    case "design-system":
+      return "Design System";
+    case "api-spec":
+      return "API Specification";
+    case "readme":
+      return "README";
   }
 }
 
@@ -342,7 +496,8 @@ async function sha256(text: string) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function flattenContent(content: unknown): string {
+function extractOpenAIText(result: unknown) {
+  const content = (result as { choices?: Array<{ message?: { content?: unknown } }> })?.choices?.[0]?.message?.content ?? "";
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
     return content
@@ -355,40 +510,21 @@ function flattenContent(content: unknown): string {
   return "";
 }
 
-function extractAiText(result: unknown) {
-  const candidate =
-    (result as { choices?: Array<{ message?: { content?: unknown } }> })?.choices?.[0]?.message?.content ??
-    (result as { data?: Array<{ message?: { content?: unknown } }> })?.data?.[0]?.message?.content ??
-    (result as { output_text?: unknown })?.output_text ??
-    (result as { text?: unknown })?.text ??
-    "";
-
-  return flattenContent(candidate);
-}
-
-function extractJson(text: string) {
+function extractJsonArrayFromText(text: string) {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
-  const fenceMatch = trimmed.match(/```json\s*([\s\S]*?)```/i);
-  const raw = fenceMatch?.[1]?.trim() ?? trimmed;
-
-  const firstBrace = raw.indexOf("{");
-  const lastBrace = raw.lastIndexOf("}");
-  const slice = firstBrace >= 0 && lastBrace > firstBrace ? raw.slice(firstBrace, lastBrace + 1) : raw;
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const raw = fenced?.[1]?.trim() ?? trimmed;
+  const firstBracket = raw.indexOf("[");
+  const lastBracket = raw.lastIndexOf("]");
+  const slice = firstBracket >= 0 && lastBracket > firstBracket ? raw.slice(firstBracket, lastBracket + 1) : raw;
 
   try {
-    return JSON.parse(slice) as Record<string, unknown>;
+    return JSON.parse(slice);
   } catch {
     return null;
   }
-}
-
-function openRouterKeys() {
-  return [
-    Deno.env.get("OPENROUTER_API_KEY"),
-    Deno.env.get("OPENROUTER_API_KEY_2"),
-  ].filter(Boolean) as string[];
 }
 
 async function fetchJsonText(url: string, init: RequestInit) {
@@ -423,10 +559,10 @@ async function fetchJsonTextWithTimeout(url: string, init: RequestInit, timeoutM
   }
 }
 
-async function callOpenAIChat(system: string, prompt: string, maxTokens = 3200) {
+async function callOpenAIRaw(system: string, prompt: string, model: string, maxTokens = 3200) {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
-  console.log("[ai] OpenAI request start");
+  console.log(`[ai] OpenAI raw request start model=${model}`);
   const text = await fetchJsonTextWithTimeout("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -434,501 +570,68 @@ async function callOpenAIChat(system: string, prompt: string, maxTokens = 3200) 
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
+      model,
       messages: [
         { role: "system", content: system },
         { role: "user", content: prompt },
       ],
-      temperature: 0.2,
-      max_tokens: maxTokens,
-      response_format: { type: "json_object" },
-    }),
-  }, 15000);
-  console.log("[ai] OpenAI response received");
-  return extractAiText(JSON.parse(text));
-}
-
-async function callGeminiChat(system: string, prompt: string, maxTokens = 4096) {
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
-  console.log("[ai] Gemini request start");
-  const text = await fetchJsonTextWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, responseMimeType: "application/json", maxOutputTokens: maxTokens },
-    }),
-  }, 15000);
-  console.log("[ai] Gemini response received");
-  return extractAiText(JSON.parse(text));
-}
-
-async function callOpenRouterChat(system: string, prompt: string, key: string, maxTokens = 3200) {
-  console.log("[ai] OpenRouter request start");
-  const text = await fetchJsonTextWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
-      "HTTP-Referer": "http://localhost",
-      "X-Title": "PLANNR",
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODEL,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.2,
+      temperature: 0.85,
       max_tokens: maxTokens,
     }),
-  }, 20000);
-  console.log("[ai] OpenRouter response received");
-  return extractAiText(JSON.parse(text));
+  }, 60000);
+  console.log("[ai] OpenAI raw response received");
+  const parsed = JSON.parse(text);
+  console.log("[ai] OpenAI raw provider JSON", parsed);
+  const extracted = extractOpenAIText(parsed);
+  logMarkdownDebug("[ai] OpenAI extracted AI text", extracted);
+  return extracted;
 }
 
-function scoreStructuredPayload(kind: string, json: Record<string, unknown>) {
-  const keys = Object.keys(json);
-  const filledKeys = keys.filter((key) => {
-    const value = json[key];
-    if (value === null || value === undefined) return false;
-    if (typeof value === "string") return value.trim().length > 0;
-    if (Array.isArray(value)) return value.length > 0;
-    if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0;
-    return true;
-  }).length;
-
-  const typeBonus =
-    kind === "questions" ? (Array.isArray(json.questions) ? 20 : 0) :
-    kind === "stack" ? (typeof json.frontend === "string" && typeof json.backend === "string" ? 20 : 0) :
-    Object.prototype.hasOwnProperty.call(json, "title") ? 20 : 0;
-
-  return filledKeys + typeBonus + Math.min(keys.length, 12);
-}
-
-async function tryProvider(
-  label: string,
-  runner: () => Promise<string>,
-  kind: string,
+async function callInsForgeAiChat(
+  client: BackendContext["client"],
+  system: string,
+  prompt: string,
+  model: string,
+  maxTokens = 4000,
+  temperature = 0.8,
 ) {
-  try {
-    const text = await runner();
-    const json = extractJson(text);
-    if (!json) return null;
-    return {
-      label,
-      text,
-      json,
-      score: scoreStructuredPayload(kind, json),
-    };
-  } catch (error) {
-    console.warn(`[ai] ${label} failed for ${kind}`, error);
-    return null;
-  }
+  const completion = await client.ai.chat.completions.create({
+    model,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: prompt },
+    ],
+    temperature,
+    maxTokens,
+  });
+  const text = extractOpenAIText(completion);
+  if (!text.trim()) throw new Error(`InsForge AI returned empty response`);
+  return text;
 }
 
-async function callStructuredAi<T extends Record<string, unknown>>(system: string, prompt: string, fallbackTitle: string) {
-  const failures: string[] = [];
-  const attempts: Array<Promise<{ label: string; text: string; json: Record<string, unknown>; score: number } | null>> = [
-    tryProvider("OpenAI", async () => {
-      try {
-        return await callOpenAIChat(system, prompt, 4000);
-      } catch (error) {
-        failures.push(`OpenAI: ${error instanceof Error ? error.message : String(error)}`);
-        throw error;
-      }
-    }, fallbackTitle),
-    tryProvider("Gemini", async () => {
-      try {
-        return await callGeminiChat(system, prompt, 5000);
-      } catch (error) {
-        failures.push(`Gemini: ${error instanceof Error ? error.message : String(error)}`);
-        throw error;
-      }
-    }, fallbackTitle),
-  ];
-
-  for (const [index, key] of openRouterKeys().entries()) {
-    attempts.push(tryProvider(`OpenRouter-${index + 1}`, async () => {
-      try {
-        return await callOpenRouterChat(system, prompt, key, 4000);
-      } catch (error) {
-        failures.push(`OpenRouter-${index + 1}: ${error instanceof Error ? error.message : String(error)}`);
-        throw error;
-      }
-    }, fallbackTitle));
-  }
-
-  const winner = await Promise.any(
-    attempts.map(async (attempt) => {
-      const result = await attempt;
-      if (!result) throw new Error("Provider returned no usable JSON");
-      return result;
-    }),
-  ).catch(() => null);
-
-  if (!winner) {
-    throw new Error(`Failed to generate ${fallbackTitle}. Provider errors: ${failures.slice(0, 4).join(" | ") || "No provider returned parseable JSON."}`);
-  }
-
-  console.log(`[ai] ${fallbackTitle} selected ${winner.label} (score=${winner.score})`);
-  return { text: winner.text, json: winner.json as T };
+function sanitizeMarkdown(text: string) {
+  return text.replace(/\r\n/g, "\n").replace(/^\uFEFF/, "").trim();
 }
 
-function stringifyList(items: unknown) {
-  if (!Array.isArray(items) || items.length === 0) return "- None provided";
-  return items.map((item) => `- ${String(item)}`).join("\n");
-}
+type DocModelRoute = {
+  provider: "OpenAI" | "InsForge";
+  model: string;
+  runner: (system: string, prompt: string) => Promise<string>;
+};
 
-function stringifyKeyValueList(items: unknown) {
-  if (!Array.isArray(items) || items.length === 0) return "- None provided";
-  return items
-    .map((item) => {
-      if (!item || typeof item !== "object") return `- ${String(item)}`;
-      const obj = item as Record<string, unknown>;
-      const name = obj.name ?? obj.title ?? "Item";
-      const details =
-        obj.responsibility ??
-        obj.summary ??
-        obj.description ??
-        obj.value ??
-        obj.detail ??
-        obj.steps ??
-        obj.items ??
-        obj.pain_points ??
-        obj.goals ??
-        obj.acceptance_criteria ??
-        obj.notes ??
-        "";
-      if (Array.isArray(details)) {
-        return `- ${String(name)}\n  - ${details.map((v) => String(v)).join("\n  - ")}`;
-      }
-      return `- ${String(name)}${details ? `: ${String(details)}` : ""}`;
-    })
-    .join("\n");
-}
-
-function renderMarkdown(kind: DocKind, payload: Record<string, unknown>, project: ProjectRecord) {
-  const heading = String(payload.title ?? titleForKind(kind));
-  const summary = String(payload.summary ?? "");
-
-  if (kind === "prd") {
-    return [
-      `# ${heading}`,
-      "",
-      "## Executive Summary",
-      summary || "No summary provided.",
-      "",
-      "## Product Vision",
-      String(payload.product_vision ?? "Not provided."),
-      "",
-      "## Problem Statement",
-      String(payload.problem_statement ?? "Not provided."),
-      "",
-      "## Target Users",
-      stringifyList(payload.target_users),
-      "",
-      "## Personas",
-      stringifyKeyValueList(payload.personas),
-      "",
-      "## Goals",
-      stringifyList(payload.goals),
-      "",
-      "## Non-Goals",
-      stringifyList(payload.non_goals),
-      "",
-      "## User Journeys",
-      stringifyKeyValueList(payload.user_journeys ?? payload.core_flows),
-      "",
-      "## Feature Requirements",
-      stringifyKeyValueList(payload.feature_requirements),
-      "",
-      "## Functional Requirements",
-      stringifyList(payload.functional_requirements),
-      "",
-      "## Edge Cases",
-      stringifyList(payload.edge_cases),
-      "",
-      "## Non-Functional Requirements",
-      stringifyList(payload.non_functional_requirements),
-      "",
-      "## KPIs",
-      stringifyList(payload.kpis ?? payload.success_metrics),
-      "",
-      "## Risks",
-      stringifyList(payload.risks),
-      "",
-      "## Open Questions",
-      stringifyList(payload.open_questions),
-      "",
-      "## Project Context",
-      `- Title: ${project.title}`,
-      `- Idea: ${project.idea}`,
-    ].join("\n");
-  }
-
-  if (kind === "system_design") {
-    return [
-      `# ${heading}`,
-      "",
-      "## Summary",
-      summary || "No summary provided.",
-      "",
-      "## Architecture Overview",
-      String(payload.architecture_overview ?? "Not provided."),
-      "",
-      "## Components",
-      stringifyKeyValueList(payload.components),
-      "",
-      "## Request Flow",
-      stringifyList(payload.request_flow ?? payload.data_flow),
-      "",
-      "## Data Model",
-      stringifyList(payload.data_model),
-      "",
-      "## API Contracts",
-      stringifyList(payload.api_contracts),
-      "",
-      "## Async Jobs",
-      stringifyList(payload.async_jobs),
-      "",
-      "## Security and Auth",
-      stringifyList(payload.security_and_auth ?? payload.security),
-      "",
-      "## Scalability",
-      stringifyList(payload.scalability),
-      "",
-      "## Observability",
-      stringifyList(payload.observability),
-      "",
-      "## Failure Modes",
-      stringifyList(payload.failure_modes),
-      "",
-      "## Cost Optimizations",
-      stringifyList(payload.cost_optimizations),
-      "",
-      "## Project Context",
-      `- Title: ${project.title}`,
-      `- Idea: ${project.idea}`,
-    ].join("\n");
-  }
-
-  return [
-    `# ${heading}`,
-    "",
-    "## Summary",
-    summary || "No summary provided.",
-    "",
-    "## Module Boundaries",
-    stringifyList(payload.module_boundaries),
-    "",
-    "## Directory Structure",
-    stringifyList(payload.directory_structure),
-    "",
-    "## Database Schema Notes",
-    stringifyList(payload.database_schema_notes),
-    "",
-    "## Service Contracts",
-    stringifyList(payload.service_contracts),
-    "",
-    "## Deployment Notes",
-    stringifyList(payload.deployment_notes),
-    "",
-    "## Operational Workflows",
-    stringifyList(payload.operational_workflows),
-    "",
-    "## Security Considerations",
-    stringifyList(payload.security_considerations),
-    "",
-    "## Cost Controls",
-    stringifyList(payload.cost_controls),
-    "",
-    "## Migration Notes",
-    stringifyList(payload.migration_notes),
-    "",
-    "## Risks",
-    stringifyList(payload.risks),
-    "",
-    "## Project Context",
-    `- Title: ${project.title}`,
-    `- Idea: ${project.idea}`,
-  ].join("\n");
-}
-
-function buildPrompt(kind: DocKind, project: ProjectRecord, existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>) {
-  const sharedContext = [
-    `Project title: ${project.title}`,
-    `Project idea: ${project.idea}`,
-    project.description ? `Additional context: ${project.description}` : null,
-    project.stack_recommendation && Object.keys(project.stack_recommendation).length
-      ? `Existing stack recommendation: ${JSON.stringify(project.stack_recommendation)}`
-      : null,
-    existingDocs.length ? `Available documents: ${existingDocs.map((doc) => `${doc.document_type} (${doc.title})`).join(", ")}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  if (kind === "prd") {
-    return `
-You are generating a production-grade product requirements document (PRD) for an AI SaaS product that turns user ideas into spec bundles.
-Use a strict template-driven document and write enough detail to feel like a real product spec.
-Do not mention AI generation, templates, or internal process notes in the output.
-
-Return valid JSON only. No markdown fences. No prose outside JSON.
-
-Schema:
-{
-  "title": string,
-  "summary": string,
-  "background": string,
-  "product_vision": string,
-  "problem_statement": string,
-  "goals": string[],
-  "non_goals": string[],
-  "target_users": string[],
-  "personas": [{ "name": string, "goals": string[], "pain_points": string[] }],
-  "user_journeys": [{ "name": string, "steps": string[] }],
-  "feature_requirements": [{ "feature": string, "description": string, "acceptance_criteria": string[] }],
-  "functional_requirements": string[],
-  "edge_cases": string[],
-  "non_functional_requirements": string[],
-  "kpis": string[],
-  "open_questions": string[],
-  "risks": string[]
-}
-
-Rules:
-- Fill every section with specific content.
-- Prefer concrete and testable requirements over generic statements.
-- Include product context, user stories, success metrics, and risk notes.
-- Keep the PRD aligned with the project stack and scope.
-- Keep the document detailed, but do not repeat the same idea across many sections.
-- Avoid filler and repeated boilerplate.
-
-Context:
-${sharedContext}
-`.trim();
-  }
-
-  if (kind === "system_design") {
-    return `
-You are generating a production-grade software requirements specification (SRS) for an AI SaaS product.
-Use a strict template-driven document that reads like a real engineering requirements artifact.
-Write concrete, testable, implementation-ready requirements.
-Do not mention AI generation, templates, or internal process notes in the output.
-
-Return valid JSON only. No markdown fences. No prose outside JSON.
-
-Schema:
-{
-  "title": string,
-  "version": string,
-  "status": string,
-  "created_date": string,
-  "updated_date": string,
-  "change_log": [{ "version": string, "date": string, "author": string, "changes": string }],
-  "purpose": string,
-  "scope": string,
-  "definitions": [{ "term": string, "meaning": string }],
-  "references": string[],
-  "product_perspective": string,
-  "product_functions": string[],
-  "user_classes": [{ "role": string, "description": string, "permissions": string[] }],
-  "environment": string,
-  "constraints": string[],
-  "assumptions": string[],
-  "system_features_intro": string,
-  "feature_name": string,
-  "feature_description": string,
-  "actors": string[],
-  "preconditions": string[],
-  "postconditions": string[],
-  "main_flow": string[],
-  "alt_flow": string[],
-  "edge_case": string[],
-  "functional_requirements": string[],
-  "acceptance_criteria": string[],
-  "priority": string,
-  "ui_requirements": string[],
-  "api_requirements": string[],
-  "hardware": string[],
-  "software_interfaces": string[],
-  "performance": string[],
-  "scalability": string[],
-  "availability": string[],
-  "reliability": string[],
-  "security": string[],
-  "usability": string[],
-  "maintainability": string[],
-  "observability": string[],
-  "compliance": string[],
-  "data_models": string[],
-  "data_storage": string[],
-  "data_retention": string[],
-  "data_integrity": string[],
-  "architecture_constraints": string[],
-  "error_handling": string[],
-  "logging": string[],
-  "deployment": string[],
-  "unit_testing": string[],
-  "integration_testing": string[],
-  "system_testing": string[],
-  "performance_testing": string[],
-  "traceability_matrix": string[],
-  "risks": string[],
-  "open_issues": string[],
-  "future": string[],
-  "appendix": string[]
-}
-
-Rules:
-- Fill every section with specific content.
-- Make requirements measurable and testable.
-- Include product, interface, data, deployment, and testing details.
-- Keep terminology consistent with the project stack and scope.
-- Avoid generic filler text.
-
-Context:
-${sharedContext}
-`.trim();
-  }
-
-  return `
-You are generating a production-grade software architecture document for an AI SaaS product.
-Use a high-detail implementation template with module boundaries, deployment, and operational concerns.
-
-Return valid JSON only. No markdown fences. No prose outside JSON.
-
-Schema:
-{
-  "title": string,
-  "summary": string,
-  "module_boundaries": string[],
-  "directory_structure": string[],
-  "database_schema_notes": string[],
-  "service_contracts": string[],
-  "deployment_notes": string[],
-  "operational_workflows": string[],
-  "security_considerations": string[],
-  "cost_controls": string[],
-  "migration_notes": string[],
-  "risks": string[]
-}
-
-Rules:
-- Make the architecture implementation-ready and detailed.
-- Include deployment, data ownership, migrations, and cost control choices.
-- Keep it practical for a small team building and scaling.
-- Describe concrete modules, boundaries, and failure handling.
-- Provide at least 5 components, 5 request-flow steps, 4 data architecture notes, and 4 tradeoffs.
-- Include observability, capacity, reliability, and security considerations as first-class sections.
-- Prefer specific nouns, route names, table names, and operational behaviors over generic labels.
-
-Context:
-${sharedContext}
-`.trim();
+function getDocModelRoute(kind: GeneratedDocKind): DocModelRoute {
+  return {
+    provider: "InsForge",
+    model: "google/gemini-2.5-flash-lite",
+    runner: (system, prompt) => callInsForgeAiChat(
+      null as any,
+      system,
+      prompt,
+      "google/gemini-2.5-flash-lite",
+      6000,
+      0.8,
+    ),
+  };
 }
 
 function getProjectStack(project: ProjectRecord) {
@@ -939,33 +642,6 @@ function getProjectStack(project: ProjectRecord) {
     database: String(stack.database ?? "PostgreSQL"),
     auth: String(stack.auth ?? "Email/password and Google OAuth"),
     hosting: String(stack.hosting ?? "InsForge"),
-  };
-}
-
-function summarizeDocs(existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>) {
-  if (!existingDocs.length) return "PRD, system design, and architecture documents";
-  return existingDocs.map((doc) => `${doc.document_type} (${doc.title})`).join(", ");
-}
-
-function fallbackQuestionsForIdea(idea: string) {
-  const title = idea
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 3)
-    .map((word) => word[0].toUpperCase() + word.slice(1))
-    .join(" ");
-
-  return {
-    projectName: `${title || "Untitled"} Project`,
-    questions: [
-      { id: "q1", question: "Who is the primary user?", options: ["End customers", "Internal team", "Both"] },
-      { id: "q2", question: "What platform should we support first?", options: ["Web", "Mobile", "Web + mobile"] },
-      { id: "q3", question: "What is the main launch goal?", options: ["MVP", "Pilot", "Full launch"] },
-      { id: "q4", question: "How should the product make money?", options: ["Free", "Subscription", "One-time purchase"] },
-      { id: "q5", question: "Do we need AI features?", options: ["No", "Light AI", "Core AI workflow"] },
-    ],
   };
 }
 
@@ -981,408 +657,6 @@ function fallbackStackForIdea(idea: string) {
     rationale: mobile
       ? "A mobile-first product benefits from React Native for shared iOS and Android delivery."
       : "React + Node.js + PostgreSQL is the safest default for fast shipping and long-term maintainability.",
-  };
-}
-
-function fallbackPrdPayload(project: ProjectRecord, existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>) {
-  const stack = getProjectStack(project);
-  return {
-    title: `${project.title} PRD`,
-    summary: `A product requirements document for ${project.title}.`,
-    background: project.description ?? project.idea,
-    product_vision: `Turn the idea for ${project.title} into a clear, build-ready product plan.`,
-    problem_statement: "The concept needs a structured PRD so the team can agree on scope, flows, and success criteria before implementation.",
-    goals: [
-      "Define the product scope clearly.",
-      "Align the team on the user experience.",
-      "Create a handoff-ready spec for implementation.",
-    ],
-    non_goals: [
-      "Pixel-perfect design work.",
-      "Detailed implementation code.",
-      "Team collaboration features in the spec tool itself.",
-    ],
-    target_users: ["Primary users", "Operators", "Internal reviewers"],
-    personas: [
-      {
-        name: "Primary Builder",
-        goals: ["Move from idea to a shippable plan", "Understand the stack quickly"],
-        pain_points: ["Unclear requirements", "Too much back-and-forth"],
-      },
-    ],
-    user_journeys: [
-      {
-        name: "Idea to spec",
-        steps: ["Enter a short idea.", "Answer clarifying questions.", "Review the stack.", "Generate the full spec bundle."],
-      },
-    ],
-    feature_requirements: [
-      {
-        feature: "Clarifying questions",
-        description: "Collect enough context to shape the generated spec.",
-        acceptance_criteria: ["Questions are short", "Answers are saved", "Flow can continue"],
-      },
-      {
-        feature: "Spec generation",
-        description: "Produce a PRD aligned with the project idea and stack.",
-        acceptance_criteria: ["Markdown is generated", "Document content is persisted", "Download link is available"],
-      },
-    ],
-    functional_requirements: [
-      "The system shall create a project shell before document generation.",
-      "The system shall generate a PRD with project-specific sections.",
-      "The system shall store the generated document version for later download.",
-    ],
-    edge_cases: [
-      "Provider failures should not block document creation.",
-      "Empty answers should be handled gracefully.",
-      "Repeated generation should create a new version instead of overwriting history.",
-    ],
-    non_functional_requirements: [
-      "Generation should complete within a reasonable interactive flow.",
-      "The output should be consistent and easy to review.",
-      "Ownership checks should be enforced on every request.",
-    ],
-    kpis: ["Spec completion rate", "Time to first download", "Generation success rate"],
-    open_questions: ["Should the PRD include more persona detail?", "Should the output be optimized for team review?"],
-    risks: ["Model output may be incomplete without a fallback path.", "Scope can drift if the idea is too vague.", "Stack choices may need manual correction."],
-    appendix: [`Related documents: ${summarizeDocs(existingDocs)}`, `Stack: ${stack.frontend} / ${stack.backend} / ${stack.database}`],
-  };
-}
-
-function fallbackSrsPayload(project: ProjectRecord) {
-  const stack = getProjectStack(project);
-  const today = new Date().toISOString().slice(0, 10);
-  return {
-    title: `${project.title} System Design`,
-    version: "1.0",
-    status: "Draft",
-    created_date: today,
-    updated_date: today,
-    change_log: [{ version: "1.0", date: today, author: "PLANNR AI", changes: "Initial draft" }],
-    purpose: `Define the engineering requirements for ${project.title}.`,
-    scope: project.description ?? project.idea,
-    definitions: [
-      { term: "PRD", meaning: "Product Requirements Document" },
-      { term: "SRS", meaning: "Software Requirements Specification" },
-    ],
-    references: ["PRD.md", "ARCHITECTURE.md", "README.md"],
-    product_perspective: "A planning product that turns an idea into a structured specification bundle.",
-    product_functions: ["Collect clarifying questions", "Recommend a stack", "Generate docs", "Export a ZIP bundle"],
-    user_classes: [
-      { role: "USER", description: "Builder using the tool", permissions: ["Create specs", "Download bundles"] },
-      { role: "ADMIN", description: "Operational reviewer", permissions: ["Review usage", "Inspect billing"] },
-    ],
-    environment: `${stack.frontend} frontend, backend function runtime, PostgreSQL storage`,
-    constraints: ["Authenticated access", "Free-tier generation limit", "Provider timeout handling"],
-    assumptions: ["Users are signed in before generating documents."],
-    system_features_intro: "The system produces a cohesive document bundle with consistent structure.",
-    feature_name: "Spec generation",
-    feature_description: "Convert an idea into versioned planning documents.",
-    actors: ["Builder", "Backend service", "AI provider"],
-    preconditions: ["User is authenticated.", "Project exists.", "Quota remains available."],
-    postconditions: ["Documents are stored.", "Download links are available."],
-    main_flow: ["User submits an idea.", "System gathers clarifying details.", "Backend generates documents.", "System stores document versions."],
-    alt_flow: ["If a provider fails, the backend should continue with a fallback response."],
-    edge_case: ["If quota is exceeded, the request should be rejected before generation starts."],
-    functional_requirements: ["Generate PRD, system design, and architecture docs.", "Persist generated versions.", "Expose download endpoints for stored docs."],
-    acceptance_criteria: ["Each section renders without placeholder markers.", "Each generated doc is downloadable.", "The project record remains ownership-safe."],
-    priority: "High",
-    ui_requirements: ["Responsive builder", "Document preview", "Download button"],
-    api_requirements: ["POST /project", "POST /generate/prd", "POST /generate/system-design", "POST /generate/architecture"],
-    hardware: ["Modern browser"],
-    software_interfaces: ["Authentication", "PostgreSQL", "Model providers"],
-    performance: ["Interactive generation flow with visible progress."],
-    scalability: ["Stateless backend functions", "Indexed ownership lookups"],
-    availability: ["Best-effort generation with fallback handling."],
-    reliability: ["Versioned writes should not overwrite history."],
-    security: ["Bearer auth", "Ownership checks", "RLS policies"],
-    usability: ["One flow from idea to downloadable bundle."],
-    maintainability: ["Template-driven documents with stable sections."],
-    observability: ["Route logs and latency tracking."],
-    compliance: ["User-owned data stays behind authenticated access."],
-    data_models: ["users", "projects", "documents", "document_versions", "usage_limits"],
-    data_storage: ["PostgreSQL tables"],
-    data_retention: ["Generated specs remain until deleted."],
-    data_integrity: ["Foreign keys and unique constraints prevent duplicate records."],
-    architecture_constraints: [`Current stack recommendation: ${stack.frontend}, ${stack.backend}, ${stack.database}.`],
-    error_handling: ["Validate inputs", "Fallback on provider errors", "Return structured API errors"],
-    logging: ["Log route, status, and duration for generation requests."],
-    deployment: ["Backend function plus frontend deployment."],
-    unit_testing: ["Template rendering and fallback payloads should be covered."],
-    integration_testing: ["Auth, generation, and download flows should be verified end-to-end."],
-    system_testing: ["ZIP output should contain all expected files."],
-    performance_testing: ["Measure end-to-end generation latency."],
-    traceability_matrix: ["FR-001 -> doc generation", "FR-002 -> download flow"],
-    risks: ["Provider outages", "Template drift", "Incomplete AI output"],
-    open_issues: ["Decide whether to expose more preview detail."],
-    future: ["GitHub sync", "Collaborative review", "More export formats"],
-    appendix: [`Related documents: ${summarizeDocs([])}`, `Stack: ${stack.frontend} / ${stack.backend} / ${stack.database}`],
-  };
-}
-
-function fallbackArchitecturePayload(project: ProjectRecord) {
-  const stack = getProjectStack(project);
-  return {
-    title: `${project.title} Architecture`,
-    summary: `Implementation architecture for ${project.title}.`,
-    module_boundaries: [
-      "Browser UI",
-      "Backend generation function",
-      "Database persistence layer",
-      "Billing and history services",
-      "Download packaging path",
-    ],
-    directory_structure: [
-      "src/routes/build.tsx",
-      "insforge/functions/backend/index.ts",
-      "migrations/*.sql",
-      "tools/spec-generator/templates/*.tpl",
-    ],
-    database_schema_notes: [
-      "projects stores the idea and selected stack",
-      "documents stores one row per document type",
-      "document_versions preserves immutable version history",
-      "api_logs captures runtime events",
-    ],
-    service_contracts: [
-      "POST /project creates the project shell",
-      "POST /generate/prd generates the PRD",
-      "POST /generate/system-design generates the SRS",
-      "POST /generate/architecture generates the architecture doc",
-      "GET /download/:id serves the exported artifact",
-    ],
-    deployment_notes: [
-      "Frontend and backend can deploy independently.",
-      "The backend expects configured environment variables.",
-      "Database migrations must be applied before generation.",
-    ],
-    operational_workflows: [
-      "Create project",
-      "Generate PRD",
-      "Generate system design",
-      "Generate architecture",
-      "Export the bundle",
-    ],
-    security_considerations: [
-      "Bearer authentication is required.",
-      "Row-level security limits data access to the owner.",
-      "Payment verification must be idempotent.",
-    ],
-    cost_controls: [
-      "Limit free users to the configured generation cap.",
-      "Use fallback generation only when model output fails.",
-      "Keep ZIP creation in-memory and short-lived.",
-    ],
-    migration_notes: [
-      "Run SQL migrations before deploying the backend.",
-      "Preserve existing version history tables.",
-    ],
-    risks: [
-      "AI provider failure can slow generation.",
-      "Template drift can create inconsistent docs.",
-      "Schema changes may require migration updates.",
-    ],
-    stack: `${stack.frontend} / ${stack.backend} / ${stack.database}`,
-  };
-}
-
-function maxTokensForDocKind(kind: DocKind) {
-  if (kind === "prd") return 7000;
-  if (kind === "system_design") return 6000;
-  return 5000;
-}
-
-function fallbackDesignPayload(project: ProjectRecord, existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>) {
-  const stack = getProjectStack(project);
-  return {
-    title: `${project.title} Design System`,
-    executive_summary: `A practical design and implementation summary for ${project.title}.`,
-    problem_statement: {
-      current_state: ["The product idea needs a consistent design and handoff structure."],
-      desired_state: ["The output should read like a real implementation-ready design document."],
-      constraints: ["Stay aligned with the project stack.", "Keep the document specific and actionable."],
-    },
-    goals: [
-      "Define a cohesive design direction.",
-      "Align the document with the PRD and architecture.",
-      "Make the output usable for implementation handoff.",
-    ],
-    non_goals: ["Pixel-perfect visual branding.", "Interactive design token management."],
-    success_metrics: [
-      { metric: "Template coverage", current: "Partial", target: "Full", measurement_method: "Manual review" },
-      { metric: "Handoff clarity", current: "Low", target: "High", measurement_method: "Reviewer feedback" },
-    ],
-    system_overview: {
-      boundaries: ["Browser UI", "Backend generation flow", "Database persistence", "Download/export path"],
-      high_level_flow: [
-        "User submits an idea.",
-        "Backend gathers context and generates structured content.",
-        "The document is rendered from the template.",
-        "The export is stored and made downloadable.",
-      ],
-      key_interfaces: ["React frontend", "Backend API routes", "PostgreSQL"],
-    },
-    architecture: {
-      style: [
-        `Template-first rendering with ${stack.frontend}, ${stack.backend}, and ${stack.database}.`,
-        "Stateless backend routes with durable persistence.",
-        "Provider fallback and timeout handling.",
-      ],
-      components: [
-        { name: "Builder UI", responsibility: "Collect input and show generation progress.", scaling: "Client-side", failure_modes: "Fallback to stored versions." },
-        { name: "Generation Orchestrator", responsibility: "Create and store document versions.", scaling: "Stateless backend", failure_modes: "Use fallback payloads." },
-        { name: "Document Store", responsibility: "Persist versions and metadata.", scaling: "Indexed PostgreSQL", failure_modes: "Return a clear backend error." },
-      ],
-      deployment: ["Frontend deploys independently", "Backend function uses environment variables", "Database migrations must be applied first"],
-      security: ["Bearer auth", "Ownership checks", "RLS policies"],
-      observability: ["Route logs", "Latency tracking", "Error capture"],
-      reliability: ["Fallback payloads", "Provider retries", "Versioned writes"],
-      tradeoffs: ["More model cost for better first-pass output", "Fallback content is less rich than AI-generated output"],
-    },
-    data_design: {
-      entity_name: "projects",
-      entities: [
-        { name: "projects", fields: ["title", "idea", "description", "stack recommendation"], indexes: ["user_id, created_at"], constraints: ["Ownership enforced"], retention: "Until deleted" },
-        { name: "documents", fields: ["project_id", "document_type", "status"], indexes: ["project_id, document_type"], constraints: ["Unique per project/type"], retention: "Until deleted" },
-        { name: "document_versions", fields: ["document_id", "version_number", "content_markdown"], indexes: ["document_id, version_number"], constraints: ["Immutable version rows"], retention: "Until deleted" },
-      ],
-      access_patterns: [
-        { use_case: "Load latest project docs", query: "Documents by project and type", index: "project_id, document_type" },
-        { use_case: "List user history", query: "Projects by owner and created_at", index: "user_id, created_at" },
-      ],
-      consistency_model: ["Strong consistency for ownership and writes", "Read-your-own-write for generated versions"],
-    },
-    api_design: {
-      limit: "3 specs for free users",
-      conventions: ["JSON request/response bodies", "Bearer auth for user routes", "Stable IDs and timestamps"],
-      endpoints: [
-        {
-          method: "POST",
-          path: "/project",
-          auth: "Required",
-          rate_limit: "3 specs for free users",
-          request: `{"title":"${project.title}","idea":"${project.idea}"}`,
-          response: `{"success":true,"project":{"id":"uuid"}}`,
-          errors: ["400 invalid request", "429 quota exceeded"],
-          notes: summarizeDocs(existingDocs) ? ["Creates the project shell and document shells."] : ["Creates the project shell and document shells."],
-        },
-      ],
-    },
-  };
-}
-
-function buildQuestionsPrompt(idea: string, specs: string) {
-  return `
-Return valid JSON only.
-
-Schema:
-{
-  "projectName": string,
-  "questions": [{ "id": string, "question": string, "options": string[] }]
-}
-
-Rules:
-- Create 5 to 7 short clarifying questions.
-- Keep options practical and distinct.
-- Make the project name short, product-like, and based on the idea.
-
-Idea:
-${idea}
-
-Specs:
-${specs || "None"}
-`.trim();
-}
-
-function buildStackPrompt(idea: string, answers: Record<string, string>) {
-  return `
-Return valid JSON only.
-
-Schema:
-{
-  "frontend": string,
-  "backend": string,
-  "database": string,
-  "auth": string,
-  "hosting": string,
-  "rationale": string
-}
-
-Rules:
-- Be practical and modern.
-- Optimize for speed and scalability.
-- Mention why the stack fits the idea.
-
-Idea:
-${idea}
-
-Answers:
-${JSON.stringify(answers, null, 2)}
-`.trim();
-}
-
-async function callQuestionsAi(idea: string, specs: string) {
-  const system = "You generate concise clarifying questions for product planning.";
-  let json: Record<string, unknown> | null = null;
-  try {
-    ({ json } = await callStructuredAi(system, buildQuestionsPrompt(idea, specs), "questions"));
-  } catch (error) {
-    console.warn("[ai] questions fallback used", error);
-  }
-  if (!json || typeof json.projectName !== "string" || !Array.isArray(json.questions) || !json.questions.length) {
-    return fallbackQuestionsForIdea(idea);
-  }
-  return {
-    projectName: String(json.projectName ?? "Untitled Project"),
-    questions: Array.isArray(json.questions) ? json.questions : [],
-  };
-}
-
-async function callStackAi(idea: string, answers: Record<string, string>) {
-  const system = "You recommend a practical production stack.";
-  let json: Record<string, unknown> | null = null;
-  try {
-    ({ json } = await callStructuredAi(system, buildStackPrompt(idea, answers), "stack"));
-  } catch (error) {
-    console.warn("[ai] stack fallback used", error);
-  }
-  if (!json || typeof json.frontend !== "string" || typeof json.backend !== "string" || typeof json.database !== "string") {
-    return fallbackStackForIdea(idea);
-  }
-  return {
-    frontend: String(json.frontend ?? "React"),
-    backend: String(json.backend ?? "Node.js"),
-    database: String(json.database ?? "PostgreSQL"),
-    auth: String(json.auth ?? "Email/password and Google OAuth"),
-    hosting: String(json.hosting ?? "Vercel"),
-    rationale: String(json.rationale ?? "Recommended stack."),
-  };
-}
-
-async function callDesignAi(project: ProjectRecord, existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>) {
-  const system = "You are a senior product designer and solutions architect. Return only JSON that matches the requested schema exactly.";
-  let json: Record<string, unknown> | null = null;
-  try {
-    ({ json } = await callStructuredAi(system, buildDesignPrompt(project, existingDocs), "design"));
-  } catch (error) {
-    console.warn("[ai] design fallback used", error);
-  }
-  if (!json || typeof json.title !== "string") {
-    json = fallbackDesignPayload(project, existingDocs);
-  }
-  return {
-    title: String(json.title ?? `${project.title} Design System`),
-    executive_summary: String(json.executive_summary ?? project.description ?? project.idea),
-    problem_statement: json.problem_statement ?? {},
-    goals: Array.isArray(json.goals) ? json.goals : [],
-    non_goals: Array.isArray(json.non_goals) ? json.non_goals : [],
-    success_metrics: Array.isArray(json.success_metrics) ? json.success_metrics : [],
-    system_overview: json.system_overview ?? {},
-    architecture: json.architecture ?? {},
-    data_design: json.data_design ?? {},
-    api_design: json.api_design ?? {},
-    limit: String(json.api_design && typeof json.api_design === "object" ? (json.api_design as Record<string, unknown>).limit ?? "3 specs for free users" : "3 specs for free users"),
   };
 }
 
@@ -1451,21 +725,24 @@ async function ensureUserProfile(context: BackendContext["client"], user: AuthUs
 
 async function getUsageState(context: BackendContext): Promise<UsageState> {
   const limit = context.profile.role === "pro" ? 100 : 3;
-  const { count: historyCount, error: historyError } = await context.client.database
+  // Count only completed spec bundles. `spec_history` is the canonical record
+  // for a finished bundle, so partial or failed runs do not consume quota.
+  const { data: completedSpecs, error: usageError } = await context.client.database
     .from("spec_history")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", context.user.id);
+    .select("id")
+    .eq("user_id", context.user.id)
+    .order("created_at", { ascending: false });
 
-  if (historyError) {
-    throw new Error(historyError.message);
+  if (usageError) {
+    throw new Error(usageError.message);
   }
-  const used = Number(historyCount ?? 0);
+  const used = completedSpecs?.length ?? 0;
   return {
     role: context.profile.role,
     limit,
     used,
     remaining: Math.max(limit - used, 0),
-    blocked: context.profile.role !== "pro" && used >= 3,
+    blocked: context.profile.role !== "pro" && used >= limit,
   };
 }
 
@@ -1620,8 +897,12 @@ async function createProjectShell(
 
   const docs = [
     { document_type: "prd" as const, title: `${title} PRD` },
+    { document_type: "srs" as const, title: `${title} SRS` },
     { document_type: "system_design" as const, title: `${title} System Design` },
     { document_type: "architecture" as const, title: `${title} Architecture` },
+    { document_type: "design-system" as const, title: `${title} Design System` },
+    { document_type: "api-spec" as const, title: `${title} API Specification` },
+    { document_type: "readme" as const, title: `${title} README` },
   ];
 
   const { error: docsError } = await client.database.from("documents").insert(
@@ -1695,7 +976,6 @@ async function createDocumentVersion(
   client: BackendContext["client"],
   document: DocumentRecord,
   contentMarkdown: string,
-  structuredData: Record<string, unknown>,
   aiModel: string,
 ) {
   const existingVersions = await getDocumentVersions(client, document.id);
@@ -1709,7 +989,6 @@ async function createDocumentVersion(
       document_id: document.id,
       version_number: versionNumber,
       content_markdown: contentMarkdown,
-      structured_data: structuredData,
       file_format: "md",
       file_name: fileName,
       checksum,
@@ -1730,6 +1009,7 @@ async function createDocumentVersion(
     current_version_id: inserted.id,
   });
 
+  logMarkdownDebug(`[${document.document_type}] final saved markdown`, contentMarkdown);
   return inserted as DocumentVersionRecord;
 }
 
@@ -1737,75 +1017,36 @@ async function callAiForDocument(
   client: BackendContext["client"],
   kind: DocKind,
   project: ProjectRecord,
-  existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>,
+  generationContext?: {
+    idea?: string;
+    specs?: string;
+    answers?: Record<string, unknown>;
+    selectedOptions?: Record<string, unknown>;
+    stackRecommendation?: Record<string, unknown>;
+    questions?: Array<{ question: string; answer?: string }>;
+  },
 ) {
-  const prompt = buildPrompt(kind, project, existingDocs);
-  const system = "You are a senior product strategist and solutions architect. Return only JSON that exactly matches the requested schema.";
-  let structured: Record<string, unknown> | null = null;
-  try {
-    ({ json: structured } = await callStructuredAi(system, prompt, titleForKind(kind), maxTokensForDocKind(kind)));
-  } catch (error) {
-    console.warn(`[ai] ${kind} generation fallback used`, error);
+  const contextParts: string[] = [];
+
+  const idea = generationContext?.idea || project.idea;
+  const specs = generationContext?.specs || project.description;
+
+  if (idea) contextParts.push(`Idea: ${idea}`);
+  if (specs) contextParts.push(`Context: ${specs}`);
+
+  if (generationContext?.questions?.length) {
+    const qaLines = generationContext.questions
+      .filter((q) => q.question && q.answer)
+      .map((q) => `- ${q.question}: ${q.answer}`);
+    if (qaLines.length) {
+      contextParts.push(`\nWhat the founder told us:\n${qaLines.join("\n")}`);
+    }
   }
-  if (!structured || !Object.keys(structured).length) {
-    structured =
-      kind === "prd"
-        ? fallbackPrdPayload(project, existingDocs)
-        : kind === "system_design"
-          ? fallbackSrsPayload(project)
-          : fallbackArchitecturePayload(project);
-  }
 
-  const markdown =
-    kind === "prd"
-      ? await renderPrdMarkdown(structured, project).catch(() => renderPrdMarkdown(fallbackPrdPayload(project, existingDocs), project))
-      : kind === "system_design"
-        ? await renderSystemDesignMarkdown(structured, project, existingDocs).catch(() => renderSystemDesignMarkdown(fallbackSrsPayload(project), project, existingDocs))
-        : await renderArchitectureMarkdown(structured, project, existingDocs).catch(() => renderArchitectureMarkdown(fallbackArchitecturePayload(project), project, existingDocs));
-  const usage = {};
+  const context = contextParts.join("\n") || undefined;
 
-    return { structured, markdown, usage };
-}
-
-function getDeterministicDocumentPayload(
-  kind: DocKind,
-  project: ProjectRecord,
-  existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>,
-) {
-  if (kind === "prd") return fallbackPrdPayload(project, existingDocs);
-  if (kind === "system_design") return fallbackSrsPayload(project);
-  return fallbackArchitecturePayload(project);
-}
-
-function buildDeterministicDocumentMarkdown(
-  kind: DocKind,
-  project: ProjectRecord,
-  existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>,
-) {
-  const payload = getDeterministicDocumentPayload(kind, project, existingDocs);
-  try {
-    return renderMarkdown(kind, payload, project);
-  } catch {
-    return [
-      `# ${titleForKind(kind)}`,
-      "",
-      `Fallback ${titleForKind(kind)} generated for ${project.title}.`,
-      "",
-      project.idea,
-    ].join("\n");
-  }
-}
-
-async function generateDocumentVersionWithFallback(
-  ctx: BackendContext,
-  kind: DocKind,
-  project: ProjectRecord,
-  doc: DocumentRecord,
-  existingDocs: Array<{ document_type: DocKind; title: string; summary?: string }>,
-) {
-  const payload = getDeterministicDocumentPayload(kind, project, existingDocs);
-  const markdown = buildDeterministicDocumentMarkdown(kind, project, existingDocs);
-  return await createDocumentVersion(ctx.client, doc, markdown, payload, AI_MODEL);
+  const result = await callRawMarkdownDocumentAi(client, kind, project, context || undefined);
+  return result;
 }
 
 function simplePdfEncode(text: string) {
@@ -1916,6 +1157,160 @@ async function listLatestDocumentsForProject(client: BackendContext["client"], p
   return enriched;
 }
 
+function fallbackQuestionsForIdea(idea: string): Array<{ id: string; question: string; options: string[] }> {
+  const normalized = idea.toLowerCase();
+  const isMobile = /mobile|ios|android|app/.test(normalized);
+  const isBooking = /book|booking|reserve|reservation|slot|schedule/.test(normalized);
+  const isMarketplace = /marketplace|platform|multi[- ]vendor|vendor|seller|buyer/.test(normalized);
+  const isSaaS = /dashboard|admin|team|workflow|analytics|crm|saas/.test(normalized);
+  const isSocial = /social|community|chat|messaging|feed|forum/.test(normalized);
+  const isAi = /\bai\b|artificial intelligence|chatbot|assistant|agent|recommend/i.test(normalized);
+
+  const domainHints = [
+    isBooking ? "availability windows, cancellations, and confirmations" : null,
+    isMarketplace ? "buyers, sellers, commissions, and trust" : null,
+    isSaaS ? "roles, permissions, and reporting" : null,
+    isSocial ? "profiles, moderation, and engagement loops" : null,
+    isAi ? "model quality, data sources, and safety" : null,
+    isMobile ? "offline use, push notifications, and device-first UX" : null,
+  ].filter(Boolean);
+
+  const contextHint = domainHints.length
+    ? ` with attention to ${domainHints.join(", ")}`
+    : "";
+
+  const featureHint = isBooking
+    ? "court selection, time slots, payment flow, and booking rules"
+    : isMarketplace
+      ? "catalogs, search, seller onboarding, and order handling"
+      : isSaaS
+        ? "workspace setup, member access, and dashboard reporting"
+        : isSocial
+          ? "profiles, posting, discovery, and moderation"
+          : isAi
+            ? "prompt flow, model outputs, and human review"
+            : "core user flow, key screens, and success path";
+
+  return [
+    {
+      id: "q1",
+      question: `Who is the primary user for this product${contextHint}?`,
+      options: ["End customers", "Business admins", "Both audiences", "A niche specialist audience"],
+    },
+    {
+      id: "q2",
+      question: `What is the single most important outcome the product must deliver around ${featureHint}?`,
+      options: ["Speed and convenience", "Trust and reliability", "Discovery and engagement", "Revenue and conversion"],
+    },
+    {
+      id: "q3",
+      question: `How should the product make money or justify its existence?`,
+      options: ["Subscription", "One-time payment", "Commission or transaction fee", "Internal tool / no direct monetization"],
+    },
+    {
+      id: "q4",
+      question: `What level of scale should we design for first?`,
+      options: ["Small pilot / MVP", "Hundreds of users", "Thousands of users", "Large multi-city or multi-region usage"],
+    },
+    {
+      id: "q5",
+      question: `Which capability is most critical in the first release?`,
+      options: ["Simple core flow", "Rich dashboard or admin tools", "Notifications and reminders", "Payments and checkout"],
+    },
+    {
+      id: "q6",
+      question: `What is the biggest risk or constraint we need to account for?`,
+      options: ["User trust and privacy", "Operational complexity", "Integration dependencies", "Performance and reliability"],
+    },
+    {
+      id: "q7",
+      question: `What should happen when something goes wrong in the product?`,
+      options: ["Show clear recovery steps", "Retry automatically", "Escalate to support", "Block the action until verified"],
+    },
+  ];
+}
+
+async function generateQuestionsWithAi(
+  client: BackendContext["client"],
+  idea: string,
+  specs?: string,
+): Promise<Array<{ id: string; question: string; options: string[] }>> {
+  const system = `You are a product discovery expert helping founders clarify their app idea before building.
+Generate EXACTLY 7 multiple-choice questions that are highly specific to the product idea provided.
+Each question must help understand: who uses it, what problem it solves, how it makes money, what scale, key features, competition, and unique constraints.
+Questions must be product-specific — never generic. A turf booking app gets questions about courts, slots, payments, cancellations. A face app gets questions about AI features, selfie analysis, skin coaching.
+Return ONLY a valid JSON array, no preamble, no markdown fences.
+Format: [{ "id": "q1", "question": "...", "options": ["option text only", "option text only", "option text only", "option text only"] }, ...]
+IMPORTANT: options must contain ONLY the answer text. Do NOT add "A:", "B:", "C:", "D:" prefixes. Do NOT number the options.
+Exactly 7 objects. Each must have exactly 4 options. IDs must be q1 through q7.`;
+
+  const prompt = `Product idea: ${idea}${specs ? `\nAdditional context: ${specs}` : ""}\n\nGenerate exactly 7 specific clarifying questions for this product.`;
+
+  const text = await callInsForgeAiChat(client, system, prompt, "google/gemini-2.5-flash-lite", 1200, 0.8);
+
+  console.error("[questions] raw AI response:", text);
+  const clean = String(text).replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+  const parseJson = (input: string) => {
+    const normalized = input.replace(/,\s*([}\]])/g, "$1").trim();
+    return JSON.parse(normalized);
+  };
+
+  let rawQuestions: unknown;
+  try {
+    rawQuestions = parseJson(clean);
+  } catch {
+    const arrayMatch = clean.match(/\[[\s\S]*\]/);
+    const objectMatch = clean.match(/\{[\s\S]*\}/);
+    const candidate = arrayMatch?.[0] ?? objectMatch?.[0];
+    if (!candidate) {
+      console.error("[questions] No JSON array/object found in:", clean.slice(0, 300));
+      throw new Error(`Failed to parse questions JSON: ${clean.slice(0, 200)}`);
+    }
+    try {
+      rawQuestions = parseJson(candidate);
+    } catch {
+      console.error("[questions] Parse also failed:", candidate.slice(0, 300));
+      throw new Error(`Failed to parse questions JSON: ${candidate.slice(0, 200)}`);
+    }
+  }
+
+  const questionsArray = Array.isArray(rawQuestions)
+    ? rawQuestions
+    : Array.isArray((rawQuestions as any)?.questions)
+      ? (rawQuestions as any).questions
+      : null;
+
+  if (!questionsArray || questionsArray.length !== 7) {
+    throw new Error(`AI did not return exactly 7 questions, got: ${questionsArray?.length ?? 0}`);
+  }
+  const questions = questionsArray.map((q: any, index: number) => {
+    if (!q || typeof q !== "object") throw new Error(`Question ${index + 1} is invalid`);
+
+    const cleanOptions = Array.isArray(q.options)
+      ? q.options.map((opt: string) =>
+          String(opt)
+            .replace(/^[A-D]\s*[:.)\-]\s*/i, "")
+            .trim(),
+        )
+      : [];
+
+    return {
+      id: `q${index + 1}`,
+      question: String(q.question ?? "").trim(),
+      options: cleanOptions,
+    };
+  });
+
+  // Validate cleaned questions
+  for (const [index, q] of questions.entries()) {
+    if (!q.question || q.question.length < 10) throw new Error(`Question ${index + 1} text invalid`);
+    if (q.options.length !== 4 || q.options.some((o: string) => !o)) throw new Error(`Question ${index + 1} options invalid`);
+  }
+
+  return questions;
+}
+
 async function handleGenerateQuestions(ctx: BackendContext, req: Request) {
   const body = await readJsonBody(req);
   const idea = String(body.idea ?? "").trim();
@@ -1925,27 +1320,45 @@ async function handleGenerateQuestions(ctx: BackendContext, req: Request) {
     return jsonResponse(400, { success: false, error: "Idea is required." });
   }
 
-  const result = await callQuestionsAi(idea, specs);
-  return jsonResponse(200, {
-    success: true,
-    ...result,
-  });
+  try {
+    const questions = await generateQuestionsWithAi(ctx.client, idea, specs || undefined);
+    return jsonResponse(200, { success: true, questions });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[questions] failed:", message);
+    return jsonResponse(500, {
+      success: false,
+      error: message,
+    });
+  }
 }
 
 async function handleCreatePaymentOrder(req: Request) {
   const body = await readJsonBody(req);
   const plan = String(body.plan ?? "").trim().toLowerCase();
+  const amountInInr = Number(body.amountInInr ?? body.amount_in_inr ?? 0);
+  const description = body.description ? String(body.description).trim() : undefined;
+  const receiptPrefix = body.receiptPrefix ? String(body.receiptPrefix).trim() : undefined;
 
   if (!isRazorpayPlan(plan)) {
     return jsonResponse(400, { success: false, error: "Plan must be pro, enterprise, or custom." });
   }
 
+  if (plan === "custom" && (!Number.isFinite(amountInInr) || amountInInr <= 0)) {
+    return jsonResponse(400, { success: false, error: "Custom plans require a positive amountInInr." });
+  }
+
   try {
-    const order = await createRazorpayOrder(plan);
+    const order = await createRazorpayOrder(plan, {
+      amountInInr: plan === "custom" ? amountInInr : undefined,
+      description,
+      receiptPrefix,
+    });
     return jsonResponse(200, {
       success: true,
       plan,
       upiId: getBillingUpiId(),
+      amountInInr: plan === "custom" ? amountInInr : order.amount / 100,
       ...order,
     });
   } catch (error) {
@@ -1957,15 +1370,19 @@ async function handleCreatePaymentOrder(req: Request) {
 }
 
 async function handleGenerateStack(ctx: BackendContext, req: Request) {
+  const rateLimit = consumeRateLimit(`${ctx.user.id}:/generate/stack`, 20);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse("/generate/stack");
+  }
+
   const body = await readJsonBody(req);
   const idea = String(body.idea ?? "").trim();
-  const answers = (body.answers && typeof body.answers === "object" ? body.answers : {}) as Record<string, string>;
 
   if (idea.length < 10) {
     return jsonResponse(400, { success: false, error: "Idea is required." });
   }
 
-  const result = await callStackAi(idea, answers);
+  const result = fallbackStackForIdea(idea);
   return jsonResponse(200, {
     success: true,
     ...result,
@@ -1973,6 +1390,11 @@ async function handleGenerateStack(ctx: BackendContext, req: Request) {
 }
 
 async function handleCreateProject(ctx: BackendContext, req: Request) {
+  const rateLimit = consumeRateLimit(`${ctx.user.id}:/project`, 5);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse("/project");
+  }
+
   const body = await readJsonBody(req);
   const title = String(body.title ?? "").trim();
   const idea = String(body.idea ?? "").trim();
@@ -2240,6 +1662,12 @@ async function handleFetchProject(ctx: BackendContext, req: Request, projectId: 
 }
 
 async function handleGenerateDocument(ctx: BackendContext, req: Request, kind: DocKind) {
+  const route = `/generate/${kind}`;
+  const rateLimit = consumeRateLimit(`${ctx.user.id}:${route}`, 5);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(route);
+  }
+
   const started = Date.now();
   const body = await readJsonBody(req);
   const projectId = String(body.projectId ?? body.project_id ?? "").trim();
@@ -2250,6 +1678,25 @@ async function handleGenerateDocument(ctx: BackendContext, req: Request, kind: D
   }
 
   const project = await getProjectOwnedByUser(ctx.client, projectId, ctx.user.id);
+  const generationContext = kind === "prd" ? {
+    idea: String(body.idea ?? project.idea ?? "").trim(),
+    specs: String(body.specs ?? body.description ?? project.description ?? "").trim(),
+    answers: toPlainRecord(body.answers ?? body.mcqAnswers ?? body.responses),
+    selectedOptions: toPlainRecord(body.selectedOptions ?? body.selected_options),
+    stackRecommendation: toPlainRecord(body.stackRecommendation ?? body.stack_recommendation ?? project.stack_recommendation),
+    questions: Array.isArray(body.questions)
+      ? body.questions
+          .map((item) => {
+            if (!item || typeof item !== "object") return null;
+            const obj = item as Record<string, unknown>;
+            return {
+              question: String(obj.question ?? "").trim(),
+              answer: String(obj.answer ?? obj.selected_option ?? obj.selectedOption ?? "").trim(),
+            };
+          })
+          .filter((item): item is { question: string; answer?: string } => Boolean(item?.question))
+      : [],
+  } : undefined;
   const doc = await fetchExistingDocument(ctx.client, project.id, kind);
   if (!doc) {
     return jsonResponse(404, { success: false, error: "Document shell was not found for this project." });
@@ -2291,25 +1738,14 @@ async function handleGenerateDocument(ctx: BackendContext, req: Request, kind: D
   await updateDocumentStatus(ctx.client, doc.id, { status: "generating" });
 
   try {
-    const existingDocs = await listLatestDocumentsForProject(ctx.client, project.id);
-    const summaryDocs = existingDocs.map((item) => ({
-      document_type: item.document_type as DocKind,
-      title: item.title,
-      summary: item.latest_version?.structured_data?.summary ?? item.latest_version?.structured_data?.architecture_overview ?? "",
-    }));
-
-    const ai = await callAiForDocument(ctx.client, kind, project, summaryDocs);
-    const version = await createDocumentVersion(ctx.client, doc, ai.markdown, ai.structured, AI_MODEL);
-    const designPreview = kind === "architecture"
-      ? await (async () => {
-        const design = await callDesignAi(project, summaryDocs);
-        const markdown = await renderDesignMarkdown(project, design as unknown as Record<string, unknown>);
-        return {
-          structured_data: design as unknown as Record<string, unknown>,
-          content_markdown: markdown,
-        };
-      })().catch(() => null)
-      : null;
+    const ai = await callAiForDocument(ctx.client, kind, project, generationContext);
+    const version = await createDocumentVersion(ctx.client, doc, ai.markdown, ai.model);
+    const designPreview =
+      kind === "architecture"
+        ? {
+            content_markdown: version.content_markdown,
+          }
+        : null;
 
     await updateProject(ctx.client, project.id, {
       generation_state: "ready",
@@ -2327,26 +1763,19 @@ async function handleGenerateDocument(ctx: BackendContext, req: Request, kind: D
       statusCode: 200,
       durationMs,
       metadata: {
-        ai_model: AI_MODEL,
+        ai_model: ai.model,
+        ai_provider: ai.provider,
         document_id: doc.id,
         version_id: version.id,
       },
     });
 
-    // Increment lifetime_generations after a successful full generation
-    try {
-      await ctx.client.database.rpc("increment_lifetime_generations", { p_user_id: ctx.user.id, p_units: 1 });
-    } catch (incErr) {
-      // Log increment failure but do not fail the generation response
-      await logEvent(ctx.client, {
-        userId: ctx.user.id,
-        projectId: project.id,
-        route: `/generate/${kind}`,
-        method: "POST",
-        level: "warn",
-        message: "Failed to increment lifetime_generations",
-        metadata: { error: incErr instanceof Error ? incErr.message : String(incErr) },
-      }).catch(() => {});
+    if (kind === "readme") {
+      await recordSpecHistory(
+        ctx,
+        project,
+        `${new URL(req.url).origin}${ROUTE_PREFIX}/download/${project.id}?scope=project&format=zip`,
+      ).catch(() => {});
     }
 
     return jsonResponse(200, {
@@ -2355,101 +1784,59 @@ async function handleGenerateDocument(ctx: BackendContext, req: Request, kind: D
       document: doc,
       version,
       designPreview,
-      aiModel: AI_MODEL,
+      aiModel: ai.model,
       downloadUrl: `${new URL(req.url).origin}${ROUTE_PREFIX}/download/${doc.id}?scope=document&format=md`,
     });
   } catch (error) {
-    const fallbackDocs = await listLatestDocumentsForProject(ctx.client, project.id).catch(() => []);
-    const fallbackSummaries = fallbackDocs.map((item) => ({
-      document_type: item.document_type as DocKind,
-      title: item.title,
-      summary: item.latest_version?.structured_data?.summary ?? item.latest_version?.structured_data?.architecture_overview ?? "",
-    }));
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : "Generation failed";
 
-    try {
-      const version = await generateDocumentVersionWithFallback(ctx, kind, project, doc, fallbackSummaries);
+    await updateProject(ctx.client, project.id, { generation_state: "failed" }).catch(() => {});
+    await updateDocumentStatus(ctx.client, doc.id, { status: "failed" }).catch(() => {});
 
-      await updateProject(ctx.client, project.id, {
-        generation_state: "ready",
-        current_stage: `generated-${kind}`,
-        last_generated_at: new Date().toISOString(),
-      }).catch(() => {});
+    const usage = await getUsageState(ctx).catch(() => null);
+    const isLimitError =
+      error instanceof Error &&
+      /Daily generation limit exceeded|free limit reached|quota/i.test(error.message);
 
-      await logEvent(ctx.client, {
-        userId: ctx.user.id,
-        projectId: project.id,
-        route: `/generate/${kind}`,
-        method: "POST",
-        level: "warn",
-        message: `${kind} generated with fallback content`,
-        statusCode: 200,
-        durationMs: Date.now() - started,
-        metadata: {
-          ai_model: AI_MODEL,
-          document_id: doc.id,
-          version_id: version.id,
-          fallback: true,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      });
+    await logEvent(ctx.client, {
+      userId: ctx.user.id,
+      projectId: project.id,
+      route: `/generate/${kind}`,
+      method: "POST",
+      level: "error",
+      message: errorMessage,
+      statusCode: isLimitError ? 429 : 500,
+      durationMs: Date.now() - started,
+      metadata: {
+        document_id: doc.id,
+        code: isLimitError ? "LIMIT_EXCEEDED" : undefined,
+        usage,
+        original_error: error instanceof Error ? error.message : String(error),
+      },
+    });
 
-      return jsonResponse(200, {
-        success: true,
-        projectId: project.id,
-        document: doc,
-        version,
-        designPreview: null,
-        aiModel: AI_MODEL,
-        downloadUrl: `${new URL(req.url).origin}${ROUTE_PREFIX}/download/${doc.id}?scope=document&format=md`,
-        fallback: true,
-      });
-    } catch (fallbackError) {
-      const errorMessage =
-        fallbackError instanceof Error
-          ? fallbackError.message
-          : typeof fallbackError === "string"
-            ? fallbackError
-            : "Generation failed";
-
-      await updateProject(ctx.client, project.id, { generation_state: "failed" }).catch(() => {});
-      await updateDocumentStatus(ctx.client, doc.id, { status: "failed" }).catch(() => {});
-
-      const usage = await getUsageState(ctx).catch(() => null);
-      const isLimitError =
-        fallbackError instanceof Error &&
-        /Daily generation limit exceeded|free limit reached|quota/i.test(fallbackError.message);
-
-      await logEvent(ctx.client, {
-        userId: ctx.user.id,
-        projectId: project.id,
-        route: `/generate/${kind}`,
-        method: "POST",
-        level: "error",
-        message: errorMessage,
-        statusCode: isLimitError ? 429 : 500,
-        durationMs: Date.now() - started,
-        metadata: {
-          document_id: doc.id,
-          code: isLimitError ? "LIMIT_EXCEEDED" : undefined,
-          usage,
-          original_error: error instanceof Error ? error.message : String(error),
-          fallback_error: errorMessage,
-        },
-      });
-
-      if (isLimitError && usage) {
-        return limitExceededResponse(usage);
-      }
-
-      return jsonResponse(500, {
-        success: false,
-        error: errorMessage,
-      });
+    if (isLimitError && usage) {
+      return limitExceededResponse(usage);
     }
+
+    return jsonResponse(500, {
+      success: false,
+      error: errorMessage,
+    });
   }
 }
 
 async function handleDownload(ctx: BackendContext, req: Request, id: string) {
+  const rateLimit = consumeRateLimit(`${ctx.user.id}:/download`, 20);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse("/download");
+  }
+
   const url = new URL(req.url);
   const format = (url.searchParams.get("format") ?? "md") as DownloadFormat;
   const scope = (url.searchParams.get("scope") ?? "document") as "document" | "project";
@@ -2460,53 +1847,13 @@ async function handleDownload(ctx: BackendContext, req: Request, id: string) {
   if (scope === "project") {
     const project = await getProjectOwnedByUser(ctx.client, id, ctx.user.id);
     const docs = await listLatestDocumentsForProject(ctx.client, project.id);
-    const docSummaries = docs.map((doc) => ({
-      document_type: doc.document_type,
-      title: doc.title,
-      summary: doc.latest_version?.structured_data?.summary ?? doc.latest_version?.structured_data?.architecture_overview ?? "",
-    }));
     const zip = new JSZip();
-    zip.file("manifest.json", JSON.stringify({
-      project: {
-        id: project.id,
-        title: project.title,
-        idea: project.idea,
-        created_at: project.created_at,
-      },
-      documents: docs.map((doc) => ({
-        id: doc.id,
-        document_type: doc.document_type,
-        title: doc.title,
-        latest_version: doc.latest_version?.version_number ?? null,
-      })),
-    }, null, 2));
 
     for (const doc of docs) {
       const latest = doc.latest_version;
       if (!latest) continue;
       zip.file(`${doc.document_type}/${slugify(doc.title)}.md`, latest.content_markdown);
-      zip.file(`${doc.document_type}/${slugify(doc.title)}.json`, JSON.stringify(latest.structured_data, null, 2));
     }
-
-    const [designMarkdown, apiMarkdown, readmeMarkdown, folderStructure] = await Promise.all([
-      (async () => {
-        try {
-          const design = await callDesignAi(project, docSummaries);
-          return await renderDesignMarkdown(project, design as unknown as Record<string, unknown>);
-        } catch {
-          return await renderDesignMarkdown(project, {});
-        }
-      })(),
-      renderApiSpecMarkdown(project, docSummaries),
-      renderReadmeMarkdown(project, docSummaries),
-      renderFolderStructureMarkdown(project),
-    ]);
-
-    zip.file("design/DESIGN_SYSTEM.md", designMarkdown);
-    zip.file("api/API_SPEC.md", apiMarkdown);
-    zip.file("README.md", readmeMarkdown);
-    zip.file("structure/FOLDER_STRUCTURE.md", folderStructure.markdown);
-    zip.file("structure/FOLDER_STRUCTURE.json", folderStructure.json);
 
     const bytes = await zip.generateAsync({ type: "uint8array" });
     await recordSpecHistory(ctx, project, `${new URL(req.url).origin}${ROUTE_PREFIX}/download/${project.id}?scope=project&format=zip`);
@@ -2546,6 +1893,17 @@ async function handleDownload(ctx: BackendContext, req: Request, id: string) {
 
 async function handleUsage(ctx: BackendContext, req: Request) {
   const state = await getUsageState(ctx);
+  if (Deno.env.get("PLANNR_DEBUG_LIMITS") === "1") {
+    console.info("[usage]", {
+      userId: ctx.user.id,
+      role: state.role,
+      used: state.used,
+      limit: state.limit,
+      remaining: state.remaining,
+      blocked: state.blocked,
+      source: "spec_history",
+    });
+  }
   return jsonResponse(200, {
     success: true,
     ...state,
@@ -2607,12 +1965,28 @@ export default async function handler(req: Request): Promise<Response> {
       return await handleGetUserHistory(context, req);
     }
 
+    if (req.method === "POST" && route === "/generate/srs") {
+      return await handleGenerateDocument(context, req, "srs");
+    }
+
     if (req.method === "POST" && route === "/generate/system-design") {
       return await handleGenerateDocument(context, req, "system_design");
     }
 
     if (req.method === "POST" && route === "/generate/architecture") {
       return await handleGenerateDocument(context, req, "architecture");
+    }
+
+    if (req.method === "POST" && route === "/generate/design-system") {
+      return await handleGenerateDocument(context, req, "design-system");
+    }
+
+    if (req.method === "POST" && route === "/generate/api-spec") {
+      return await handleGenerateDocument(context, req, "api-spec");
+    }
+
+    if (req.method === "POST" && route === "/generate/readme") {
+      return await handleGenerateDocument(context, req, "readme");
     }
 
     if (req.method === "GET" && route.startsWith("/download/")) {
@@ -2632,8 +2006,12 @@ export default async function handler(req: Request): Promise<Response> {
       "POST /payments/confirm",
       "GET /project/:id",
       "POST /generate/prd",
+      "POST /generate/srs",
       "POST /generate/system-design",
         "POST /generate/architecture",
+      "POST /generate/design-system",
+      "POST /generate/api-spec",
+      "POST /generate/readme",
         "GET /download/:id",
       ],
     });
@@ -2655,3 +2033,6 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 }
+
+
+

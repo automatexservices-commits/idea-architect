@@ -11,17 +11,17 @@ Example (with env var):
 
 ```bash
 export OPENAI_API_KEY=sk-...
-node tools/spec-generator/generate_spec.js --template tools/spec-generator/templates/prd.md.tpl --output out/prd.md --brief "Short project brief here"
+node tools/spec-generator/generate_spec.js --template tools/spec-generator/templates/prd.m.tpl --output out/prd.md --brief "Short project brief here"
 ```
 
 If you don't provide an API key the script writes a `*.values.json` next to the output for you to fill manually.
 
 Templates provided:
 
-- `templates/prd.md.tpl`
-- `templates/architecture.md.tpl`
-- `templates/design.md.tpl`
-- `templates/readme.md.tpl`
+- `templates/prd.m.tpl`
+- `templates/architecture.m.tpl`
+- `templates/design-system.m.tpl`
+- `templates/readme.m.tpl`
 
 Notes
 

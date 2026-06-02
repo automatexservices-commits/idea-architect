@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
@@ -14,32 +14,37 @@ import {
 
 import upiLogo from "@/assets/upi-logo.svg";
 import razorpayLogo from "@/assets/razorpay-logo.png";
-import { InteractiveGrid } from "@/components/InteractiveGrid";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useAuth } from "@/features/auth";
 import {
   fetchBillingDashboard,
-  openRazorpayCheckout,
+  openPricingCheckout,
   payViaUpiIntent,
   type BillingDashboardResponse,
   type BillingPaymentRecord,
+  type PricingPlanId,
 } from "@/features/billing/checkout";
+import { PricingCards } from "@/features/billing/plans";
 
 export const Route = createFileRoute("/billing")({
   head: () => ({
     meta: [
-      { title: "Billing & Plan - PLANNR" },
-      { name: "description", content: "Manage your PLANNR billing dashboard, payment methods, and verified payment history." },
+      { title: "PLANNR Dashboard | Your Daily Command Center" },
+      { name: "description", content: "Track tasks, deadlines, priorities, and progress in PLANNR's dashboard built for focused study and work." },
+      { property: "og:title", content: "PLANNR Dashboard | Your Daily Command Center" },
+      { property: "og:description", content: "Track tasks, deadlines, priorities, and progress in PLANNR's dashboard built for focused study and work." },
     ],
   }),
   component: BillingDashboardPage,
 });
 
 function BillingDashboardPage() {
+  const navigate = useNavigate();
   const { user, session } = useAuth();
   const [billing, setBilling] = useState<BillingDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busyPlan, setBusyPlan] = useState<null | "pro">(null);
+  const [busyPlan, setBusyPlan] = useState<PricingPlanId | null>(null);
+  const [showPlans, setShowPlans] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,29 +118,49 @@ function BillingDashboardPage() {
   };
 
   const startCheckout = async () => {
+    await handlePlanCheckout("pro");
+  };
+
+  const handlePlanCheckout = async (plan: PricingPlanId) => {
+    if (plan === "free") {
+      navigate({ to: "/build" });
+      return;
+    }
+
     if (!session?.accessToken) {
       setNotice(null);
       setError("Please sign in before starting Razorpay checkout.");
       return;
     }
 
-    setBusyPlan("pro");
+    setBusyPlan(plan);
     setNotice(null);
     setError(null);
     try {
-      const payment = await openRazorpayCheckout("pro", {
+      const payment = await openPricingCheckout(plan, {
         email: user?.email ?? undefined,
         name: displayName,
-        upiId,
       });
-      setNotice(`Payment recorded: ${payment.payment_id}. Your billing history is updated.`);
-      await refreshBilling();
+      if (payment) {
+        setNotice(`Payment recorded: ${payment.payment_id}. Your billing history is updated.`);
+        await refreshBilling();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start checkout.");
     } finally {
       setBusyPlan(null);
     }
   };
+
+  const planCards = (
+    <PricingCards
+      compact
+      expanded={showPlans}
+      onFreeAction={() => navigate({ to: "/build" })}
+      onPlanAction={handlePlanCheckout}
+      busyPlan={busyPlan}
+    />
+  );
 
   const payWithUpi = async () => {
     setNotice(null);
@@ -153,7 +178,6 @@ function BillingDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <InteractiveGrid />
       <SiteHeader />
       <main className="relative overflow-hidden">
         <div className="absolute inset-0 bg-grid opacity-35 [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]" />
@@ -206,6 +230,23 @@ function BillingDashboardPage() {
               {error}
             </div>
           )}
+
+          <section className="mt-8 rounded-[2rem] border border-border bg-white/80 p-5 shadow-[0_25px_70px_-50px_rgba(0,0,0,0.35)] sm:p-6 lg:p-7">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Plans</div>
+                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">Compact pricing</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPlans((value) => !value)}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground transition-transform hover:scale-[1.01]"
+              >
+                {showPlans ? "Show less" : "Expand plans"}
+              </button>
+            </div>
+            <div className="mt-5">{planCards}</div>
+          </section>
 
           <div className="mt-8 grid gap-5 lg:grid-cols-3">
             <section className="rounded-[2rem] border border-primary/20 bg-white/80 p-5 shadow-[0_25px_70px_-50px_rgba(0,0,0,0.35)] lg:col-span-2 lg:p-7">

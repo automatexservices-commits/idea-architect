@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { ArrowUpRight, CreditCard, FileDown, Sparkles } from "lucide-react";
 
 import { SiteHeader } from "@/components/SiteHeader";
-import { getSession, refreshSessionToken } from "@/features/auth";
+import { getSession, refreshSessionToken, useAuth } from "@/features/auth";
+import { fetchBillingDashboard, type BillingDashboardResponse } from "@/features/billing/checkout";
 import { requestInsforgeJson } from "@/lib/insforge-backend";
 
 type HistoryItem = {
@@ -87,17 +88,26 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
+  const { session } = useAuth();
   const [history, setHistory] = useState<HistoryItem[] | null>(null);
+  const [billing, setBilling] = useState<BillingDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
+    setLoading(true);
     void (async () => {
       try {
-        const h = await fetchHistory();
-        if (mounted) setHistory(h);
+        const [h, b] = await Promise.all([
+          fetchHistory(),
+          session?.accessToken ? fetchBillingDashboard() : Promise.resolve(null),
+        ]);
+        if (mounted) {
+          setHistory(h);
+          setBilling(b);
+        }
       } catch (err: any) {
         if (mounted) setError(err?.message ?? String(err));
       } finally {
@@ -107,7 +117,7 @@ function ProfilePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [session?.accessToken]);
 
   const handleDownload = async (item: HistoryItem) => {
     try {
@@ -119,6 +129,16 @@ function ProfilePage() {
       setDownloadingId(null);
     }
   };
+
+  const billingLabel = !session?.accessToken
+    ? "Guest"
+    : loading
+      ? "Loading plan..."
+      : billing?.summary.accountRole === "pro"
+        ? "Pro plan active"
+        : billing?.summary.accountRole === "free"
+          ? "Free tier active"
+          : "Plan unavailable";
 
   return (
     <div className="min-h-screen">
@@ -149,7 +169,7 @@ function ProfilePage() {
         <section className="mb-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-border bg-surface/60 p-5">
             <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Billing & plan</div>
-            <div className="mt-2 text-lg font-semibold">Free tier active</div>
+            <div className="mt-2 text-lg font-semibold">{billingLabel}</div>
             <Link to="/billing" className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
               Manage billing <ArrowUpRight className="h-4 w-4" />
             </Link>

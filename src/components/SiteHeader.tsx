@@ -32,7 +32,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/80 border-b border-border/50">
+    <header className="sticky top-0 z-40 w-full bg-background/95 border-b border-border/50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 h-20 sm:h-24 flex items-center justify-between gap-3 sm:gap-6">
         {/* Left: Back + Brand */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">

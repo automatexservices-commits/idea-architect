@@ -53,7 +53,6 @@ CREATE TABLE public.document_versions (
   document_id uuid NOT NULL REFERENCES public.documents(id) ON DELETE CASCADE,
   version_number integer NOT NULL CHECK (version_number > 0),
   content_markdown text NOT NULL,
-  structured_data jsonb NOT NULL DEFAULT '{}'::jsonb,
   file_format text NOT NULL DEFAULT 'md' CHECK (file_format IN ('md', 'pdf', 'json')),
   file_name text NOT NULL,
   checksum text NOT NULL,

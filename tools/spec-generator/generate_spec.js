@@ -89,6 +89,10 @@ async function callOpenAI() {
       const val = values[key] || '';
       out = out.replace(new RegExp('{{\\s*'+key+'\\s*}}','g'), val);
     });
+    const unresolved = out.match(/\{\{\s*[^}]+\s*\}\}/g);
+    if (unresolved && unresolved.length) {
+      throw new Error('Template validation failed: unresolved placeholders remain: ' + unresolved.slice(0, 5).join(', '));
+    }
     fs.mkdirSync(path.dirname(outputPath), { recursive:true });
     fs.writeFileSync(outputPath, out, 'utf8');
     console.log('Generated document written to', outputPath);

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   getCurrentUser,
   getSession,
@@ -26,33 +26,69 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const WIZARD_STORAGE_PREFIX = "plannr_wizard";
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession>(null);
   const [user, setUser] = useState<AuthUser>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const sessionRef = useRef<AuthSession>(null);
+  const userRef = useRef<AuthUser>(null);
 
-  const refreshAuth = useCallback(async () => {
+  useEffect(() => {
+    sessionRef.current = session;
+    userRef.current = user;
+  }, [session, user]);
+
+  const refreshAuth = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    const previousSession = sessionRef.current;
     try {
-      setLoading(true);
+      // Keep the app mounted during background auth refreshes.
+      // We still refresh the auth session on focus/visibility, but we avoid
+      // flipping the global loading gate unless this is the initial load.
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
 
       // Always ask InsForge for the current session.
       // Browser mode can restore auth from its own cookie/session state even
       // when our localStorage cache is empty after a refresh or port change.
-      const nextSession = await getSession();
+      let nextSession = await getSession();
+      if (!nextSession?.accessToken) {
+        await sleep(250);
+        nextSession = await getSession();
+      }
+
+      if (!nextSession?.accessToken && silent) {
+        // Background refreshes should not clear the current session on a
+        // transient failure. Keep the existing UI mounted and try again later.
+        return previousSession;
+      }
+
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       return nextSession;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to load auth state";
-      setError(message);
-      setSession(null);
-      setUser(null);
+      if (!silent) {
+        setError(message);
+        setSession(null);
+        setUser(null);
+      } else {
+        console.warn("[auth] background refresh failed", message);
+      }
       return null;
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -61,9 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshAuth]);
 
   useEffect(() => {
-    const onFocus = () => void refreshAuth();
+    const onFocus = () => void refreshAuth({ silent: true });
     const onVisibility = () => {
-      if (document.visibilityState === "visible") void refreshAuth();
+      if (document.visibilityState === "visible") void refreshAuth({ silent: true });
     };
 
     window.addEventListener("focus", onFocus);
@@ -97,7 +133,23 @@ export function useAuth() {
 }
 
 export function useAuthActions() {
-  const { refreshAuth } = useAuth();
+  const { refreshAuth, user } = useAuth();
+
+  const clearWizardDraft = () => {
+    if (typeof window === "undefined") return;
+    const userId = user?.id;
+    if (!userId) return;
+
+    const prefix = `${WIZARD_STORAGE_PREFIX}_${userId}_`;
+    const keys: string[] = [];
+    for (let i = 0; i < window.sessionStorage.length; i += 1) {
+      const key = window.sessionStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => window.sessionStorage.removeItem(key));
+  };
 
   return useMemo(
     () => ({
@@ -109,6 +161,7 @@ export function useAuthActions() {
       sendPasswordResetEmail,
       resetPasswordWithOtp,
       signOut: async () => {
+        clearWizardDraft();
         await signOut();
         await refreshAuth();
       },
@@ -116,6 +169,6 @@ export function useAuthActions() {
       updatePassword,
       refreshAuth,
     }),
-    [refreshAuth],
+    [refreshAuth, user?.id],
   );
 }

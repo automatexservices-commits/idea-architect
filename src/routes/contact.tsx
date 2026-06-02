@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, MessageSquare, Twitter } from "lucide-react";
+import { Instagram, Mail, MessageSquare } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -17,9 +17,9 @@ export const Route = createFileRoute("/contact")({
 
 function ContactPage() {
   const cards = [
-    { icon: Mail, title: "Support", desc: "Bug reports & how-to questions.", action: "hello@plannr.app", href: "mailto:hello@plannr.app" },
-    { icon: MessageSquare, title: "Sales", desc: "Enterprise & custom plans.", action: "sales@plannr.app", href: "mailto:sales@plannr.app" },
-    { icon: Twitter, title: "Twitter", desc: "Product updates & community.", action: "@plannr", href: "https://twitter.com" },
+    { icon: Mail, title: "Support", desc: "Bug reports & how-to questions.", action: "plannr.co.in@gmail.com", href: "mailto:plannr.co.in@gmail.com" },
+    { icon: MessageSquare, title: "Sales", desc: "Enterprise & custom plans.", action: "plannr.services@gmail.com", href: "mailto:plannr.services@gmail.com" },
+    { icon: Instagram, title: "Instagram", desc: "Product updates & community.", action: "@plannr.dev", href: "https://instagram.com/plannr.dev" },
   ];
   return (
     <div className="min-h-screen flex flex-col">

@@ -31,21 +31,19 @@ function deriveInsforgeBases() {
     const directHost = `${url.protocol}//${appKey}.functions.insforge.app`;
     const fallbackHost = region ? `${url.protocol}//${appKey}.${region}.insforge.app` : origin;
 
-    return [joinUrl(directHost, BACKEND_SLUG), joinUrl(fallbackHost, `functions/${BACKEND_SLUG}`)];
+    return [joinUrl(directHost, BACKEND_SLUG), joinUrl(fallbackHost, BACKEND_SLUG)];
   }
 
-  return [joinUrl(origin, `functions/${BACKEND_SLUG}`)];
+  return [joinUrl(origin, BACKEND_SLUG)];
 }
 
 export function getInsforgeBackendUrls(path = "") {
   const suffix = path.startsWith("/") ? path : `/${path}`;
-  // In dev, prefer the local dev proxy so we avoid CORS and hit the
-  // configured InsForge host via Vite proxy `/functions`.
-  // This keeps production behavior unchanged.
+  // In dev, talk to the live InsForge backend host directly.
+  // The local `/functions/backend` path is not mounted in this app server.
   if (import.meta.env.DEV) {
-    const local = `/functions${suffix === "/" ? "" : suffix}`;
     const remote = deriveInsforgeBases().map((base) => `${base}${suffix === "/" ? "" : suffix}`);
-    return [local, ...remote];
+    return remote;
   }
 
   return deriveInsforgeBases().map((base) => `${base}${suffix === "/" ? "" : suffix}`);

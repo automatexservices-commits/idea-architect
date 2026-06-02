@@ -13,10 +13,10 @@ import exHealth from "@/assets/ex-health.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "PLANNR — From idea to production-ready spec in minutes" },
-      { name: "description", content: "PLANNR turns vague app ideas into PRDs, architecture, API specs, and design systems. Built for indie devs, vibe coders, and founders." },
-      { property: "og:title", content: "PLANNR — From idea to production-ready spec in minutes" },
-      { property: "og:description", content: "Skip the tool switching. Generate PRD, SRS, architecture, design system, and API spec in one structured workflow." },
+      { title: "PLANNR | Plan Smarter, Get More Done" },
+      { name: "description", content: "PLANNR helps students and young professionals organize tasks, deadlines, and goals in one clean planning workspace." },
+      { property: "og:title", content: "PLANNR | Plan Smarter, Get More Done" },
+      { property: "og:description", content: "PLANNR helps students and young professionals organize tasks, deadlines, and goals in one clean planning workspace." },
     ],
   }),
   component: LandingPage,

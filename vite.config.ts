@@ -11,7 +11,22 @@ const { defineConfig } = pkg as any;
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), "");
-	const target = env.VITE_INSFORGE_BASE_URL || env.VITE_INSFORGE_FUNCTIONS_URL || env.VITE_INSFORGE_URL;
+	const rawTarget = env.VITE_INSFORGE_FUNCTIONS_URL || env.VITE_INSFORGE_BASE_URL || env.VITE_INSFORGE_URL;
+	const target = rawTarget
+		? (() => {
+			try {
+				const url = new URL(rawTarget);
+				const hostname = url.hostname;
+				if (hostname.endsWith(".insforge.app") && !hostname.endsWith(".functions.insforge.app")) {
+					const [appKey] = hostname.split(".");
+					return `${url.protocol}//${appKey}.functions.insforge.app`;
+				}
+				return `${url.protocol}//${url.host}`;
+			} catch {
+				return rawTarget;
+			}
+		})()
+		: undefined;
 
 	return {
 		vite: {

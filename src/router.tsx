@@ -1,6 +1,26 @@
 import { createRouter, useRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
+let posthogScriptInjected = false;
+
+function injectPostHogScript() {
+  if (posthogScriptInjected || typeof document === "undefined") return;
+  posthogScriptInjected = true;
+
+  const script = document.createElement("script");
+  script.innerHTML = `
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){
+      function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}
+      (n=t.createElement("script")).type="text/javascript",n.crossOrigin="anonymous",n.async=!0,n.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(n,r);
+      var l=e;
+      for(void 0!==a?l=e[a]=[]:a="posthog",l.people=l.people||[],l.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},l.people.toString=function(){return l.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once group reset opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing register register_once unregister getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags getSurveys getActiveMatchingSurveys".split(" "),p=0;p<o.length;p++)g(l,o[p]);
+      e._i.push([i,s,a])
+    },e.__SV=1)}(document,window.posthog||[]);
+    posthog.init("phc_xbbEQ5px4Dzv9Xp5rMcF4yrAk4v3k3ztsQCiYVSxc52L", {api_host:"https://us.i.posthog.com"});
+  `;
+  document.head.appendChild(script);
+}
+
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
 
@@ -55,10 +75,13 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
 }
 
 export const getRouter = () => {
+  injectPostHogScript();
+
   const router = createRouter({
     routeTree,
     context: {},
     scrollRestoration: true,
+    defaultPreload: false,
     defaultPreloadStaleTime: 0,
     defaultErrorComponent: DefaultErrorComponent,
   });

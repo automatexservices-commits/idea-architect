@@ -92,13 +92,24 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { pathname } = useLocation();
   const showIntroChrome = pathname === "/" || pathname === "/welcome";
+  const showInteractiveGrid =
+    pathname === "/" ||
+    pathname === "/welcome" ||
+    pathname === "/pricing" ||
+    pathname === "/examples" ||
+    pathname === "/docs" ||
+    pathname === "/terms" ||
+    pathname === "/privacy" ||
+    pathname === "/cookies" ||
+    pathname === "/contact" ||
+    pathname === "/refund";
 
   return (
     <AuthProvider>
       <AuthGate>
         {showIntroChrome ? <SplashIntro /> : null}
         <WelcomeGate />
-        <InteractiveGrid />
+        {showInteractiveGrid ? <InteractiveGrid /> : null}
         <div className="relative z-10">
           <Outlet />
         </div>

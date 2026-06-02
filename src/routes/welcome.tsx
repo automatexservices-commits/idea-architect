@@ -7,8 +7,10 @@ import { signInWithGoogle } from "@/features/auth";
 export const Route = createFileRoute("/welcome")({
   head: () => ({
     meta: [
-      { title: "Welcome to PLANNR" },
-      { name: "description", content: "Continue with Google or explore without an account." },
+      { title: "PLANNR Login | Access Your Planner" },
+      { name: "description", content: "Sign in to PLANNR to manage classes, tasks, and goals from your personal planning dashboard." },
+      { property: "og:title", content: "PLANNR Login | Access Your Planner" },
+      { property: "og:description", content: "Sign in to PLANNR to manage classes, tasks, and goals from your personal planning dashboard." },
     ],
   }),
   component: WelcomePage,

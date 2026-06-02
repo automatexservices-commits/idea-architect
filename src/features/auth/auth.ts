@@ -90,6 +90,16 @@ function bootstrapSession() {
 
 bootstrapSession();
 
+function isUsableSession(value: unknown): value is { accessToken: string; user: unknown } {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      "accessToken" in value &&
+      typeof (value as { accessToken?: unknown }).accessToken === "string" &&
+      (value as { accessToken?: string }).accessToken?.length > 0,
+  );
+}
+
 
 export async function waitForSession(timeoutMs = 15000) {
   const started = Date.now();
@@ -225,29 +235,51 @@ export async function getSession() {
       insforge.getHttpClient().setAuthToken(storedToken);
     }
 
-    const { data, error } = await insforge.auth.getCurrentUser();
-
-    if (error) {
+    let currentUser = null as Awaited<ReturnType<typeof getCurrentUser>>;
+    try {
+      const { data, error } = await insforge.auth.getCurrentUser();
+      if (error) {
+        console.error('Session error:', error);
+      }
+      currentUser = data?.user ?? null;
+    } catch (error) {
       console.error('Session error:', error);
-      return null;
     }
 
     let accessToken = readAccessToken();
-    if (!accessToken) {
+    const storedUser = readStoredUser();
+
+    if ((!accessToken || !currentUser) && storedToken) {
       const refreshed = await refreshSessionToken().catch(() => null);
-      accessToken = refreshed?.accessToken ?? readAccessToken();
+      if (isUsableSession(refreshed)) {
+        return refreshed as AppSession;
+      }
+      clearSession();
+      return null;
     }
+
     if (!accessToken) {
       return null;
     }
 
-    if (data?.user) {
-      persistSession(accessToken, data.user);
+    if (currentUser) {
+      persistSession(accessToken, currentUser);
+      return {
+        accessToken,
+        user: currentUser,
+      } as AppSession;
+    }
+
+    if (storedUser) {
+      return {
+        accessToken,
+        user: storedUser,
+      } as AppSession;
     }
 
     return {
       accessToken,
-      user: data?.user ?? readStoredUser(),
+      user: null,
     } as AppSession;
   } catch (err) {
     console.error('Session error:', err);

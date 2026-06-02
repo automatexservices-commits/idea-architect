@@ -72,6 +72,8 @@ const PLATFORMS: Platform[] = [
   { name: "Cursor",   url: "https://cursor.com",   Logo: CursorLogo },
 ];
 
+const PLATFORM_LOOP = [...PLATFORMS, ...PLATFORMS];
+
 function PlatformItem({ p }: { p: Platform }) {
   return (
     <a
@@ -90,13 +92,10 @@ function PlatformItem({ p }: { p: Platform }) {
 }
 
 export function VibePlatforms() {
-  // Duplicate the list for seamless looping
-  const items = [...PLATFORMS, ...PLATFORMS];
-
   return (
     <section
       aria-label="Compatible vibe-coding platforms"
-      className="rounded-2xl border border-border/70 bg-surface/40 backdrop-blur-sm py-6"
+      className="rounded-2xl border border-border/70 bg-surface/40 py-6"
     >
       <div className="px-6 mb-4 flex items-baseline justify-between gap-4">
         <h3 className="font-display text-sm font-semibold tracking-tight text-foreground/80">
@@ -109,7 +108,7 @@ export function VibePlatforms() {
 
       <div className="marquee">
         <div className="marquee-track">
-          {items.map((p, i) => (
+          {PLATFORM_LOOP.map((p, i) => (
             <PlatformItem key={`${p.name}-${i}`} p={p} />
           ))}
         </div>

@@ -103,13 +103,19 @@ export function ProfileMenu() {
     user?.email ||
     "Guest builder";
   const statusLine = session?.user ? "Logged in" : "Free plan";
+  const primaryActionLabel = session?.user ? "Log out" : "Log in";
   const initials = getInitials(displayName);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      sessionStorage.removeItem("plannr-entered");
-    } catch {}
+  const handlePrimaryAction = async () => {
+    if (session?.user) {
+      try {
+        await logout();
+        sessionStorage.removeItem("plannr-entered");
+      } catch {}
+      window.location.href = "/welcome";
+      return;
+    }
+
     window.location.href = "/welcome";
   };
 
@@ -221,11 +227,11 @@ export function ProfileMenu() {
           <div className="px-3 py-3 border-t border-border bg-surface/40">
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={handlePrimaryAction}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border hover:border-destructive/50 hover:text-destructive transition-colors"
             >
               <LogOut className="w-4 h-4" />
-              Log out
+              {primaryActionLabel}
             </button>
           </div>
         </div>

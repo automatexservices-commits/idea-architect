@@ -1,5 +1,5 @@
-import { createClient } from "@insforge/sdk";
-import JSZip from "jszip";
+import { createClient } from "npm:@insforge/sdk";
+import JSZip from "npm:jszip";
 
 type DocKind = "prd" | "srs" | "system_design" | "architecture" | "design-system" | "api-spec" | "readme";
 type SupplementalDocKind = "folder-structure";
@@ -61,12 +61,14 @@ type BackendContext = {
     id: string;
     email: string;
     full_name: string | null;
-    role: "free" | "pro";
+    role: "free" | "pro" | "enterprise";
   };
 };
 
+type AccessPlan = "free" | "pro" | "enterprise";
+
 type UsageState = {
-  role: "free" | "pro";
+  role: AccessPlan;
   limit: number;
   used: number;
   remaining: number;
@@ -316,6 +318,34 @@ function normalizeRoute(pathname: string) {
 
 function isUuid(value: string | undefined) {
   return Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value));
+}
+
+function normalizeAccessPlan(value: string | null | undefined): AccessPlan {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "enterprise" || normalized === "custom") {
+    return "enterprise";
+  }
+  if (normalized === "pro") {
+    return "pro";
+  }
+  return "free";
+}
+
+function accessPlanLabel(plan: AccessPlan) {
+  if (plan === "enterprise") return "Enterprise";
+  if (plan === "pro") return "Pro";
+  return "Free";
+}
+
+function getPlanLimit(plan: AccessPlan) {
+  if (plan === "enterprise") return 10;
+  if (plan === "pro") return 5;
+  return 1;
+}
+
+function getCurrentMonthStartUtc() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 }
 
 function isRazorpayPlan(value: string): value is RazorpayPlan {
@@ -723,26 +753,49 @@ async function ensureUserProfile(context: BackendContext["client"], user: AuthUs
   return inserted as BackendContext["profile"];
 }
 
+async function getCurrentAccessPlan(context: BackendContext): Promise<AccessPlan> {
+  const basePlan = normalizeAccessPlan(context.profile.role);
+  const { data, error } = await context.client.database
+    .from("billing_payments")
+    .select("plan,paid_at")
+    .eq("user_id", context.user.id)
+    .eq("status", "completed")
+    .order("paid_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.plan ? normalizeAccessPlan(String(data.plan)) : basePlan;
+}
+
 async function getUsageState(context: BackendContext): Promise<UsageState> {
-  const limit = context.profile.role === "pro" ? 100 : 3;
-  // Count only completed spec bundles. `spec_history` is the canonical record
-  // for a finished bundle, so partial or failed runs do not consume quota.
-  const { data: completedSpecs, error: usageError } = await context.client.database
+  const role = await getCurrentAccessPlan(context);
+  const limit = getPlanLimit(role);
+  // Count only completed spec bundles. Free is lifetime; paid plans reset monthly.
+  let query = context.client.database
     .from("spec_history")
     .select("id")
-    .eq("user_id", context.user.id)
-    .order("created_at", { ascending: false });
+    .eq("user_id", context.user.id);
+
+  if (role !== "free") {
+    query = query.gte("created_at", getCurrentMonthStartUtc().toISOString());
+  }
+
+  const { data: completedSpecs, error: usageError } = await query.order("created_at", { ascending: false });
 
   if (usageError) {
     throw new Error(usageError.message);
   }
   const used = completedSpecs?.length ?? 0;
   return {
-    role: context.profile.role,
+    role,
     limit,
     used,
     remaining: Math.max(limit - used, 0),
-    blocked: context.profile.role !== "pro" && used >= limit,
+    blocked: used >= limit,
   };
 }
 
@@ -750,7 +803,7 @@ function limitExceededResponse(state: UsageState) {
   return jsonResponse(429, {
     success: false,
     code: "LIMIT_EXCEEDED",
-    message: "Free limit reached",
+    message: "Generation limit reached",
     usage: state,
   });
 }
@@ -763,7 +816,24 @@ async function assertGenerationAllowed(context: BackendContext) {
   return { allowed: true as const, state };
 }
 
+async function stableUuidFromString(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  const bytes = new Uint8Array(digest).slice(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join("-");
+}
+
 async function recordSpecHistory(ctx: BackendContext, project: Pick<ProjectRecord, "title" | "idea">, fileUrl: string) {
+  const id = await stableUuidFromString(`${ctx.user.id}:${fileUrl}`);
+
   const { data: existing, error: lookupError } = await ctx.client.database
     .from("spec_history")
     .select("id")
@@ -780,6 +850,7 @@ async function recordSpecHistory(ctx: BackendContext, project: Pick<ProjectRecor
   }
 
   const { error } = await ctx.client.database.from("spec_history").insert([{
+    id,
     user_id: ctx.user.id,
     project_name: project.title,
     idea_input: project.idea,
@@ -787,6 +858,9 @@ async function recordSpecHistory(ctx: BackendContext, project: Pick<ProjectRecor
   }]);
 
   if (error) {
+    if (String((error as { code?: unknown }).code ?? "") === "23505") {
+      return { created: false as const };
+    }
     throw error;
   }
 
@@ -1443,6 +1517,50 @@ async function handleCreateProject(ctx: BackendContext, req: Request) {
   });
 }
 
+async function handleCompleteProjectGeneration(ctx: BackendContext, req: Request, projectId: string) {
+  if (!isUuid(projectId)) {
+    return jsonResponse(400, { success: false, error: "Invalid project id." });
+  }
+
+  const project = await getProjectOwnedByUser(ctx.client, projectId, ctx.user.id);
+  const docs = await listLatestDocumentsForProject(ctx.client, project.id);
+  const requiredDocumentTypes: GeneratedDocKind[] = [
+    "prd",
+    "srs",
+    "system_design",
+    "architecture",
+    "design-system",
+    "api-spec",
+    "readme",
+  ];
+
+  const documentTypes = new Set(docs.map((doc) => doc.document_type));
+  const allRequiredDocumentsPresent = requiredDocumentTypes.every((type) => documentTypes.has(type));
+  const coreReady = ["prd", "system_design", "architecture"].every((type) => {
+    const doc = docs.find((item) => item.document_type === type);
+    return Boolean(doc && doc.status === "ready" && doc.current_version_id);
+  });
+  const projectReady = project.generation_state === "ready" && project.current_stage === "generated-architecture";
+
+  if (!allRequiredDocumentsPresent || !coreReady || !projectReady) {
+    return jsonResponse(409, {
+      success: false,
+      error: "Project bundle is not complete yet.",
+    });
+  }
+
+  const completionUrl = `${new URL(req.url).origin}${ROUTE_PREFIX}/download/${project.id}?scope=project&format=zip`;
+  const result = await recordSpecHistory(ctx, project, completionUrl);
+  const usage = await getUsageState(ctx);
+
+  return jsonResponse(200, {
+    success: true,
+    recorded: result.created,
+    already_recorded: !result.created,
+    usage,
+  });
+}
+
 async function handleGetUserHistory(ctx: BackendContext, req: Request) {
   try {
     const { data, error } = await ctx.client.database
@@ -1461,6 +1579,7 @@ async function handleGetUserHistory(ctx: BackendContext, req: Request) {
 
 async function handleGetBillingHistory(ctx: BackendContext) {
   try {
+    const currentPlan = await getCurrentAccessPlan(ctx).catch(() => normalizeAccessPlan(ctx.profile.role));
     const { data, error } = await ctx.client.database
       .from("billing_payments")
       .select("id,user_id,plan,amount_in_paise,currency,status,order_id,payment_id,receipt,method,upi_id,signature,notes,paid_at,created_at,updated_at")
@@ -1477,8 +1596,8 @@ async function handleGetBillingHistory(ctx: BackendContext) {
     return jsonResponse(200, {
       success: true,
       summary: {
-        accountRole: ctx.profile.role,
-        currentPlan: ctx.profile.role === "pro" ? "Pro" : "Hobby",
+        accountRole: currentPlan,
+        currentPlan: accessPlanLabel(currentPlan),
         totalSpentInPaise,
         totalSpentInInr: totalSpentInPaise / 100,
         paymentCount: completedPayments.length,
@@ -1770,14 +1889,6 @@ async function handleGenerateDocument(ctx: BackendContext, req: Request, kind: D
       },
     });
 
-    if (kind === "readme") {
-      await recordSpecHistory(
-        ctx,
-        project,
-        `${new URL(req.url).origin}${ROUTE_PREFIX}/download/${project.id}?scope=project&format=zip`,
-      ).catch(() => {});
-    }
-
     return jsonResponse(200, {
       success: true,
       projectId: project.id,
@@ -1856,7 +1967,6 @@ async function handleDownload(ctx: BackendContext, req: Request, id: string) {
     }
 
     const bytes = await zip.generateAsync({ type: "uint8array" });
-    await recordSpecHistory(ctx, project, `${new URL(req.url).origin}${ROUTE_PREFIX}/download/${project.id}?scope=project&format=zip`);
     return binaryResponse(200, bytes, `${slugify(project.title)}-bundle.zip`, "application/zip");
   }
 
@@ -1945,6 +2055,10 @@ export default async function handler(req: Request): Promise<Response> {
       return await handleCreateProject(context, req);
     }
 
+    if (req.method === "POST" && route.startsWith("/project/") && route.endsWith("/complete")) {
+      return await handleCompleteProjectGeneration(context, req, route.split("/")[2] ?? "");
+    }
+
     if (req.method === "POST" && route === "/generate/questions") {
       return await handleGenerateQuestions(context, req);
     }
@@ -1998,7 +2112,8 @@ export default async function handler(req: Request): Promise<Response> {
       error: "Route not found.",
       route,
       supported: [
-        "POST /project",
+      "POST /project",
+      "POST /project/:id/complete",
       "POST /generate/questions",
       "POST /generate/stack",
       "POST /payments/order",

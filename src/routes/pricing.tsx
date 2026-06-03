@@ -8,9 +8,9 @@ export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
       { title: "PLANNR Pricing | Find Your Best Fit" },
-      { name: "description", content: "Choose a PLANNR plan that fits your goals, with flexible pricing for students, individuals, and growing teams." },
+      { name: "description", content: "Choose a PLANNR plan with 1 lifetime generation on Free, 5 monthly generations on Pro, and 10 monthly generations on Enterprise." },
       { property: "og:title", content: "PLANNR Pricing | Find Your Best Fit" },
-      { property: "og:description", content: "Choose a PLANNR plan that fits your goals, with flexible pricing for students, individuals, and growing teams." },
+      { property: "og:description", content: "Choose a PLANNR plan with 1 lifetime generation on Free, 5 monthly generations on Pro, and 10 monthly generations on Enterprise." },
     ],
   }),
   component: PricingPage,

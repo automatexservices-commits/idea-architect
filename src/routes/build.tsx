@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, ArrowLeft, Loader2, Sparkles, Download, FileText, Check, RefreshCw } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { InteractiveGrid } from "@/components/InteractiveGrid";
 import { FileTree, type TreeNode } from "@/components/FileTree";
 import { VibePlatforms } from "@/components/VibePlatforms";
 import { useAuth, getSession, refreshSessionToken } from "@/features/auth";
@@ -69,8 +70,8 @@ type BackendGenerateResponse = {
 
 function formatFrontendErrorMessage(message: unknown) {
   const m = typeof message === "string" ? message : String(message ?? "");
-  if (/daily generation limit exceeded|daily generation limit|free limit reached|LIMIT_EXCEEDED|limit exceeded/i.test(m)) {
-    return "You hit the free limit (3 specs). Upgrade to generate more specs";
+  if (/generation limit exceeded|daily generation limit|daily generation limit exceeded|free limit reached|LIMIT_EXCEEDED|limit exceeded|quota/i.test(m)) {
+    return "You hit your plan limit. Upgrade to generate more.";
   }
   return m;
 }
@@ -218,6 +219,7 @@ function BuildPage() {
   const [idea, setIdea] = useState("");
   const [specs, setSpecs] = useState("");
   const [projectName, setProjectName] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [stack, setStack] = useState<Stack | null>(null);
@@ -321,6 +323,7 @@ function BuildPage() {
       );
 
       setProjectName(created.project.title);
+      setProjectId(created.project.id);
 
       setProgress(["Creating project", "Writing PRD"]);
       const prd = await backendJson<BackendGenerateResponse>(
@@ -371,6 +374,22 @@ function BuildPage() {
     }
   };
 
+  useEffect(() => {
+    if (step !== "output" || !projectId || !docs.folderStructure || !backendSession?.accessToken) {
+      return;
+    }
+
+    void backendJson<{ success: boolean; recorded?: boolean; already_recorded?: boolean }>(
+      `/project/${projectId}/complete`,
+      {
+        method: "POST",
+      },
+      backendSession,
+    ).catch(() => {
+      // Completion acknowledgement is best-effort and idempotent.
+    });
+  }, [step, projectId, docs.folderStructure, backendSession?.accessToken, user?.id]);
+
   const downloadZip = async () => {
     const zip = new JSZip();
     const folder = zip.folder(slug(projectName))!;
@@ -394,7 +413,18 @@ function BuildPage() {
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
 
-      <main className="flex-1">
+      <main className="flex-1 relative isolate overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute left-1/2 top-0 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]"
+        />
+        <InteractiveGrid />
+
+        <div className="relative z-10">
         {/* Stepper */}
         {step !== "output" && (
           <div className="mx-auto max-w-3xl px-6 pt-8">
@@ -450,12 +480,14 @@ function BuildPage() {
               setStep("idea");
               setIdea("");
               setSpecs("");
+              setProjectId(null);
               setAnswers({});
               setDocs({});
               setStack(null);
             }}
-          />
-        )}
+            />
+          )}
+        </div>
       </main>
     </div>
   );

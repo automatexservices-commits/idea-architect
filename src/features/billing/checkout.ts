@@ -1,8 +1,8 @@
 import { getSession, refreshSessionToken } from "@/features/auth";
 import { requestInsforgeJson } from "@/lib/insforge-backend";
-import { LAUNCH_PACK_AMOUNT_INR, LAUNCH_PACK_DESCRIPTION, LAUNCH_PACK_RECEIPT_PREFIX, type PricingPlanId } from "./pricing-config";
+import { type PricingPlanId } from "./pricing-config";
 
-type BillingPlan = "pro" | "enterprise" | "custom";
+type BillingPlan = "pro" | "enterprise";
 export type { PricingPlanId } from "./pricing-config";
 
 type CreateOrderResponse = {
@@ -16,13 +16,6 @@ type CreateOrderResponse = {
   keyId: string;
   receipt: string;
   error?: string;
-};
-
-type CheckoutTarget = {
-  plan: BillingPlan;
-  amountInInr?: number;
-  description?: string;
-  receiptPrefix?: string;
 };
 
 export type BillingPaymentRecord = {
@@ -48,7 +41,7 @@ export type BillingPaymentRecord = {
 export type BillingDashboardResponse = {
   success: boolean;
   summary: {
-    accountRole: "free" | "pro";
+    accountRole: "free" | "pro" | "enterprise";
     currentPlan: string;
     totalSpentInPaise: number;
     totalSpentInInr: number;
@@ -208,30 +201,6 @@ async function createOrder(plan: BillingPlan) {
   return body;
 }
 
-async function createCustomOrder(target: CheckoutTarget) {
-  const { response, body } = await requestInsforgeJson<CreateOrderResponse>(
-    "/payments/order",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        plan: target.plan,
-        amountInInr: target.amountInInr,
-        description: target.description,
-        receiptPrefix: target.receiptPrefix,
-      }),
-    },
-    {
-      "Content-Type": "application/json",
-    },
-  );
-
-  if (!response.ok || !body?.success) {
-    throw new Error(body?.error || `Failed to create payment order.`);
-  }
-
-  return body;
-}
-
 async function confirmRazorpayPayment(
   plan: BillingPlan,
   razorpayResponse: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string },
@@ -307,14 +276,7 @@ export async function openRazorpayCheckout(
 ) {
   await loadRazorpayScript();
 
-  const order = plan === "custom" && options?.amountInInr
-    ? await createCustomOrder({
-        plan,
-        amountInInr: options.amountInInr,
-        description: options.description,
-        receiptPrefix: options.receiptPrefix,
-      })
-    : await createOrder(plan);
+  const order = await createOrder(plan);
   const RazorpayCheckout = (window as Window & {
     Razorpay?: new (config: Record<string, unknown>) => { open: () => void; on?: (event: string, handler: () => void) => void };
   }).Razorpay;
@@ -373,12 +335,7 @@ export async function openPricingCheckout(
     return await openRazorpayCheckout("enterprise", options);
   }
 
-  return await openRazorpayCheckout("custom", {
-    ...options,
-    amountInInr: LAUNCH_PACK_AMOUNT_INR,
-    description: LAUNCH_PACK_DESCRIPTION,
-    receiptPrefix: LAUNCH_PACK_RECEIPT_PREFIX,
-  });
+  return null;
 }
 
 export async function payViaUpiIntent(plan: BillingPlan, options?: { name?: string; note?: string }) {

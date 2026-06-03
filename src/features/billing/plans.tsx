@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { Check, Sparkles, Zap, Crown, Building2 } from "lucide-react";
+import { Check, Sparkles, Zap, Crown } from "lucide-react";
 
 import type { PricingPlanId } from "./pricing-config";
 
@@ -22,8 +22,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     price: "Free",
     cadence: "lifetime",
     icon: Sparkles,
-    desc: "Perfect for solo builders and experimenting with specs.",
-    features: ["3 specs", "PRD + Architecture", "ZIP export", "Community support"],
+    desc: "Best for trying PLANNR with a single generation.",
+    features: ["1 generation lifetime", "PRD + Architecture", "ZIP export", "Community support"],
     cta: "Start free",
     highlight: false,
   },
@@ -33,8 +33,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     price: "Rs 49",
     cadence: "/ month",
     icon: Zap,
-    desc: "For founders shipping real products.",
-    features: ["7 specs / month", "All 7 docs", "Priority AI", "GitHub sync (soon)", "Email support"],
+    desc: "For founders who need monthly generation capacity.",
+    features: ["5 generations / month", "All 7 docs", "Priority AI", "GitHub sync (soon)", "Email support"],
     cta: "Get Pro",
     highlight: true,
   },
@@ -44,49 +44,30 @@ export const PRICING_PLANS: PricingPlan[] = [
     price: "Rs 150",
     cadence: "/ month",
     icon: Crown,
-    desc: "For agencies and product teams.",
-    features: ["15 specs / month", "Everything in Pro", "Priority support"],
+    desc: "For teams that need the highest monthly generation limit.",
+    features: ["10 generations / month", "Everything in Pro", "Priority support"],
     cta: "Get enterprise",
-    highlight: false,
-  },
-  {
-    id: "launch-pack",
-    name: "Launch Pack",
-    price: "Rs 299",
-    cadence: "/ year",
-    icon: Building2,
-    desc: "A limited-time, slightly crazy bundle to help you blast off.",
-    features: [
-      "100 specs for 3 months",
-      "Personal onboarding call",
-      "Featured in our community showcase",
-      "Early access to new AI features",
-      "20% lifetime discount on renewals",
-    ],
-    cta: "Claim Launch Pack",
     highlight: false,
   },
 ];
 
 export function PricingCards({
   compact = false,
-  expanded = true,
   onFreeAction,
   onPlanAction,
   busyPlan,
 }: {
   compact?: boolean;
-  expanded?: boolean;
   onFreeAction?: () => void;
   onPlanAction?: (plan: PricingPlanId) => void;
   busyPlan?: PricingPlanId | null;
 }) {
-  const visiblePlans = expanded ? PRICING_PLANS : PRICING_PLANS.slice(0, 4);
+  const visiblePlans = PRICING_PLANS;
 
   return (
-    <div className={compact ? "grid gap-4 md:grid-cols-2 xl:grid-cols-4" : "grid sm:grid-cols-2 lg:grid-cols-4 gap-5"}>
+    <div className={compact ? "grid gap-4 md:grid-cols-2 xl:grid-cols-4" : "mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3"}>
       {visiblePlans.map((plan) => {
-        const featureCount = compact && !expanded ? Math.min(plan.features.length, 2) : plan.features.length;
+        const featureCount = compact ? Math.min(plan.features.length, 2) : plan.features.length;
         return (
           <div
             key={plan.id}

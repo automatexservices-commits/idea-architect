@@ -57,6 +57,12 @@ export const Route = createRootRoute({
       { name: "description", content: "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "PLANNR — From idea to production-ready spec" },
+      { name: "twitter:title", content: "PLANNR — From idea to production-ready spec" },
+      { property: "og:description", content: "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes." },
+      { name: "twitter:description", content: "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3376e456-7d36-452e-97ca-7205f77bafa5/id-preview-5a036a14--ad20b996-2401-4e85-8968-55b0d919e141.lovable.app-1777460823725.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3376e456-7d36-452e-97ca-7205f77bafa5/id-preview-5a036a14--ad20b996-2401-4e85-8968-55b0d919e141.lovable.app-1777460823725.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -80,6 +86,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          // Apply persisted theme before paint to prevent FOUC
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('plannr-theme');if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark';}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>
         {children}

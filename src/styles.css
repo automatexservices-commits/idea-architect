@@ -84,6 +84,49 @@
   --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Dark theme — neon green on deep ink, matches welcome page vibe
+   ───────────────────────────────────────────────────────────── */
+.dark {
+  --background: oklch(0.10 0.02 150);
+  --foreground: oklch(0.97 0.01 150);
+
+  --surface: oklch(0.14 0.02 150);
+  --surface-elevated: oklch(0.18 0.025 150);
+
+  --card: oklch(0.13 0.02 150);
+  --card-foreground: oklch(0.97 0.01 150);
+  --popover: oklch(0.14 0.02 150);
+  --popover-foreground: oklch(0.97 0.01 150);
+
+  --primary: oklch(0.86 0.26 145);
+  --primary-foreground: oklch(0.12 0.02 150);
+  --primary-glow: oklch(0.92 0.22 145);
+
+  --secondary: oklch(0.18 0.02 150);
+  --secondary-foreground: oklch(0.97 0.01 150);
+  --muted: oklch(0.18 0.02 150);
+  --muted-foreground: oklch(0.70 0.02 150);
+  --accent: oklch(0.86 0.26 145 / 0.18);
+  --accent-foreground: oklch(0.92 0.22 145);
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --border: oklch(1 0 0 / 0.10);
+  --input: oklch(1 0 0 / 0.08);
+  --ring: oklch(0.86 0.26 145);
+
+  --gradient-mesh:
+    radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.28 0.12 145 / 0.45), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 50% 100%, oklch(0.32 0.14 160 / 0.30), transparent 60%);
+
+  --shadow-glow: 0 0 40px oklch(0.86 0.26 145 / 0.45);
+  --shadow-glow-sm: 0 0 20px oklch(0.86 0.26 145 / 0.30);
+  --shadow-elevated: 0 30px 80px -20px oklch(0 0 0 / 0.6);
+
+  color-scheme: dark;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -92,6 +135,7 @@
   html {
     color-scheme: light;
   }
+  html.dark { color-scheme: dark; }
 
   body {
     background-color: var(--color-background);
@@ -171,6 +215,27 @@
       oklch(0.78 0.27 145 / 0.12) 40%,
       transparent 70%);
     opacity: 0.75;
+  }
+
+  /* Dark mode: brighten grid lines, switch spotlight to screen blend */
+  .dark .interactive-grid {
+    background-image:
+      linear-gradient(to right, oklch(0.86 0.26 145 / 0.42) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.86 0.26 145 / 0.42) 1px, transparent 1px),
+      linear-gradient(to right, oklch(1 0 0 / 0.10) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(1 0 0 / 0.10) 1px, transparent 1px);
+  }
+  .dark .interactive-grid::after {
+    background: radial-gradient(circle 300px at var(--mx) var(--my),
+      oklch(0.86 0.26 145 / 0.45) 0%,
+      oklch(0.86 0.26 145 / 0.18) 40%,
+      transparent 70%);
+    mix-blend-mode: screen;
+  }
+  .dark .bg-grid {
+    background-image:
+      linear-gradient(to right, oklch(1 0 0 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(1 0 0 / 0.06) 1px, transparent 1px);
   }
 
   .gradient-text {
@@ -437,36 +502,6 @@
     animation: splash-bar 1.9s var(--transition-smooth) both;
   }
 
-  .fire-border-layer {
-    position: absolute;
-    inset: -3px;
-    z-index: -1;
-    border-radius: 12px;
-    filter: url(#fire-filter);
-    border: 2.5px solid #22c55e;
-    box-shadow:
-      0 0 8px #22c55e,
-      0 0 20px #16a34a,
-      0 0 40px #15803d;
-    animation: fireGlow 2s ease-in-out infinite alternate;
-    pointer-events: none;
-  }
-
-  @keyframes fireGlow {
-    0% {
-      box-shadow: 0 0 6px #22c55e, 0 0 15px #16a34a, 0 0 30px #15803d;
-      border-color: #4ade80;
-    }
-    50% {
-      box-shadow: 0 0 12px #4ade80, 0 0 28px #22c55e, 0 0 55px #16a34a;
-      border-color: #22c55e;
-    }
-    100% {
-      box-shadow: 0 0 8px #86efac, 0 0 20px #4ade80, 0 0 40px #22c55e;
-      border-color: #86efac;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
@@ -495,3 +530,4 @@
     }
   }
 }
+

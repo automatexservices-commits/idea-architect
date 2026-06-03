@@ -1,539 +1,339 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
-  ArrowUpRight,
-  BadgeCheck,
-  Banknote,
-  ChevronRight,
   CreditCard,
-  IndianRupee,
-  ShieldCheck,
   Sparkles,
   Zap,
+  Crown,
+  Download,
+  Check,
+  Plus,
+  Smartphone,
+  Calendar,
+  Receipt,
+  TrendingUp,
+  Shield,
+  AlertCircle,
+  ArrowUpRight,
 } from "lucide-react";
-
-import upiLogo from "@/assets/upi-logo.svg";
-import razorpayLogo from "@/assets/razorpay-logo.png";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useAuth } from "@/features/auth";
-import {
-  fetchBillingDashboard,
-  openPricingCheckout,
-  payViaUpiIntent,
-  type BillingDashboardResponse,
-  type BillingPaymentRecord,
-  type PricingPlanId,
-} from "@/features/billing/checkout";
-import { PricingCards } from "@/features/billing/plans";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/billing")({
   head: () => ({
     meta: [
-      { title: "PLANNR Dashboard | Your Daily Command Center" },
-      { name: "description", content: "Track tasks, deadlines, priorities, and progress in PLANNR's dashboard built for focused study and work." },
-      { property: "og:title", content: "PLANNR Dashboard | Your Daily Command Center" },
-      { property: "og:description", content: "Track tasks, deadlines, priorities, and progress in PLANNR's dashboard built for focused study and work." },
+      { title: "Billing & Plans — PLANNR" },
+      { name: "description", content: "Manage your PLANNR subscription, payment methods, invoices, and usage in one professional billing dashboard." },
+      { property: "og:title", content: "Billing Dashboard — PLANNR" },
+      { property: "og:description", content: "Subscription, payments, invoices and usage for your PLANNR workspace." },
     ],
   }),
-  component: BillingDashboardPage,
+  component: BillingPage,
 });
 
-function BillingDashboardPage() {
-  const navigate = useNavigate();
-  const { user, session } = useAuth();
-  const [billing, setBilling] = useState<BillingDashboardResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [busyPlan, setBusyPlan] = useState<PricingPlanId | null>(null);
-  const [showPlans, setShowPlans] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+const UPI_ID = "7984390066@ptyes";
 
-  const displayName = useMemo(() => {
-    return (
-      (user?.user_metadata?.full_name as string | undefined) ||
-      (user?.user_metadata?.name as string | undefined) ||
-      user?.email ||
-      "Guest builder"
-    );
-  }, [user]);
+type PlanKey = "hobby" | "pro" | "enterprise";
 
-  const email = user?.email ?? "guest@plannr.app";
+const PLAN_META: Record<PlanKey, { name: string; price: string; cadence: string; icon: typeof Sparkles; quota: number }> = {
+  hobby: { name: "Hobby", price: "Free", cadence: "forever", icon: Sparkles, quota: 3 },
+  pro: { name: "Pro", price: "₹49", cadence: "/ month", icon: Zap, quota: 999 },
+  enterprise: { name: "Enterprise", price: "₹150", cadence: "/ month", icon: Crown, quota: 9999 },
+};
+
+type Invoice = {
+  id: string;
+  date: string;
+  amount: string;
+  plan: string;
+  status: "Paid" | "Pending" | "Failed";
+};
+
+const SAMPLE_INVOICES: Invoice[] = [
+  { id: "INV-2026-0421", date: "Apr 21, 2026", amount: "₹49.00", plan: "Pro · Monthly", status: "Paid" },
+  { id: "INV-2026-0321", date: "Mar 21, 2026", amount: "₹49.00", plan: "Pro · Monthly", status: "Paid" },
+  { id: "INV-2026-0221", date: "Feb 21, 2026", amount: "₹49.00", plan: "Pro · Monthly", status: "Paid" },
+  { id: "INV-2026-0121", date: "Jan 21, 2026", amount: "₹0.00", plan: "Hobby · Free", status: "Paid" },
+];
+
+function loadUsage(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = localStorage.getItem("plannr-history");
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function loadPlan(): PlanKey {
+  if (typeof window === "undefined") return "hobby";
+  try {
+    const p = localStorage.getItem("plannr-plan");
+    if (p === "pro" || p === "enterprise" || p === "hobby") return p;
+  } catch {}
+  return "hobby";
+}
+
+function BillingPage() {
+  const { user } = useAuth();
+  const [plan, setPlan] = useState<PlanKey>("hobby");
+  const [usage, setUsage] = useState(0);
 
   useEffect(() => {
-    let mounted = true;
+    setPlan(loadPlan());
+    setUsage(loadUsage());
+  }, []);
 
-    void (async () => {
-      setLoading(true);
-      setError(null);
+  const meta = PLAN_META[plan];
+  const PlanIcon = meta.icon;
+  const isPaid = plan !== "hobby";
+  const usagePct = Math.min(100, Math.round((usage / meta.quota) * 100));
 
-      if (!session?.accessToken) {
-        if (mounted) {
-          setBilling(null);
-          setLoading(false);
-        }
-        return;
-      }
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    user?.email?.split("@")[0] ||
+    "Guest builder";
+  const email = user?.email || "guest@plannr.app";
 
-      try {
-        const data = await fetchBillingDashboard();
-        if (mounted) {
-          setBilling(data);
-        }
-      } catch (err) {
-        if (mounted) {
-          setBilling(null);
-          setError(err instanceof Error ? err.message : "Unable to load billing dashboard.");
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [session?.accessToken]);
-
-  const currentPlan = billing?.summary.currentPlan ?? (session?.user ? "Hobby" : "Guest");
-  const totalSpent = `Rs ${(billing?.summary.totalSpentInInr ?? 0).toFixed(2)}`;
-  const paymentCount = billing?.summary.paymentCount ?? 0;
-  const latestPayment = billing?.summary.latestPaymentAt
-    ? new Date(billing.summary.latestPaymentAt).toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : "No verified payment yet";
-  const upiId = billing?.summary.upiId ?? "7984390066@ptyes";
-  const upiName = billing?.summary.upiName ?? "PLANNR";
-
-  const refreshBilling = async () => {
-    if (!session?.accessToken) return;
-    const data = await fetchBillingDashboard();
-    setBilling(data);
-  };
-
-  const startCheckout = async () => {
-    await handlePlanCheckout("pro");
-  };
-
-  const handlePlanCheckout = async (plan: PricingPlanId) => {
-    if (plan === "free") {
-      navigate({ to: "/build" });
-      return;
-    }
-
-    if (!session?.accessToken) {
-      setNotice(null);
-      setError("Please sign in before starting Razorpay checkout.");
-      return;
-    }
-
-    setBusyPlan(plan);
-    setNotice(null);
-    setError(null);
-    try {
-      const payment = await openPricingCheckout(plan, {
-        email: user?.email ?? undefined,
-        name: displayName,
-      });
-      if (payment) {
-        setNotice(`Payment recorded: ${payment.payment_id}. Your billing history is updated.`);
-        await refreshBilling();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start checkout.");
-    } finally {
-      setBusyPlan(null);
-    }
-  };
-
-  const planCards = (
-    <PricingCards
-      compact
-      expanded={showPlans}
-      onFreeAction={() => navigate({ to: "/build" })}
-      onPlanAction={handlePlanCheckout}
-      busyPlan={busyPlan}
-    />
-  );
-
-  const payWithUpi = async () => {
-    setNotice(null);
-    setError(null);
-    try {
-      const intent = await payViaUpiIntent("pro", {
-        name: upiName,
-        note: `PLANNR Pro plan for ${displayName}`,
-      });
-      setNotice(`Opening your UPI app with ${intent}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to open UPI payment.");
-    }
-  };
+  const nextRenewal = new Date();
+  nextRenewal.setDate(nextRenewal.getDate() + 21);
+  const renewalStr = nextRenewal.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-35 [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]" />
-        <div className="absolute left-[-8%] top-10 h-80 w-80 rounded-full bg-primary/15 blur-[120px]" />
-        <div className="absolute right-[5%] top-24 h-72 w-72 rounded-full bg-primary/10 blur-[120px]" />
-
-        <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
-          <section className="rounded-[2rem] border border-primary/15 bg-gradient-to-br from-primary/10 via-background to-background p-6 shadow-[0_20px_70px_-40px_rgba(0,0,0,0.35)] sm:p-8 lg:p-10">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <main className="flex-1">
+        <section className="relative overflow-hidden border-b border-border/50">
+          <div className="absolute inset-0 bg-grid opacity-30 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
+          <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-primary/10 blur-[120px] rounded-full" />
+          <div className="relative mx-auto max-w-6xl px-6 pt-14 pb-10">
+            <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-3">
+              <Receipt className="w-3 h-3" />
+              Billing dashboard
+            </div>
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.28em] text-muted-foreground">
-                  <IndianRupee className="h-4 w-4 text-primary" />
-                  Billing dashboard
-                </div>
-                <h1 className="mt-4 font-display text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                  Hello, <span className="text-primary">{displayName}</span>
+                <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
+                  Hello, <span className="gradient-text">{displayName}</span>
                 </h1>
-                <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-                  Manage your subscription, payment methods, and verified payment history from one polished dashboard.
+                <p className="mt-2 text-muted-foreground">
+                  Manage your subscription, payment methods, and invoices.
                 </p>
               </div>
+              <Link to="/pricing" className="btn-3d btn-3d-sm btn-3d-outline self-start md:self-end">
+                <ArrowUpRight className="w-3.5 h-3.5" />
+                Compare plans
+              </Link>
+            </div>
+          </div>
+        </section>
 
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to="/pricing"
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-3 text-sm font-semibold text-foreground shadow-sm transition-transform hover:scale-[1.01]"
-                >
-                  <ArrowUpRight className="h-4 w-4" />
-                  Compare plans
-                </Link>
+        <section className="mx-auto max-w-6xl px-6 py-10 grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 rounded-2xl border border-primary/40 bg-surface/60 p-6 relative overflow-hidden">
+            <div className="absolute -top-16 -right-16 w-48 h-48 bg-primary/15 blur-[80px] rounded-full pointer-events-none" />
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
+                  <PlanIcon className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                    Current plan
+                  </div>
+                  <div className="font-display text-2xl font-bold leading-tight">{meta.name}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-display text-3xl font-bold">{meta.price}</div>
+                <div className="text-xs text-muted-foreground">{meta.cadence}</div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                <span className="flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                  Spec generations this cycle
+                </span>
+                <span className="font-mono">
+                  {usage} / {meta.quota === 999 || meta.quota === 9999 ? "∞" : meta.quota}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-accent overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-primary-glow transition-all"
+                  style={{ width: `${meta.quota >= 999 ? 12 : usagePct}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 grid sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border">
+                <Calendar className="w-4 h-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                    {isPaid ? "Renews on" : "Plan type"}
+                  </div>
+                  <div className="text-sm font-medium truncate">
+                    {isPaid ? renewalStr : "Free forever"}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border">
+                <Shield className="w-4 h-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                    Account
+                  </div>
+                  <div className="text-sm font-medium truncate">{email}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link to="/pricing" className="btn-3d btn-3d-sm">
+                <Zap className="w-3.5 h-3.5" />
+                {isPaid ? "Change plan" : "Upgrade"}
+              </Link>
+              {isPaid && (
                 <button
                   type="button"
-                  onClick={startCheckout}
-                  className="inline-flex items-center gap-2 rounded-full border border-primary/70 bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-[0_6px_0_0_rgb(15_118_110)] transition-transform hover:translate-y-[1px] disabled:opacity-70"
-                  disabled={busyPlan !== null}
+                  onClick={() => {
+                    try { localStorage.setItem("plannr-plan", "hobby"); } catch {}
+                    setPlan("hobby");
+                  }}
+                  className="btn-3d btn-3d-sm btn-3d-outline"
                 >
-                  {busyPlan ? "Opening checkout..." : "Upgrade now"}
+                  Cancel subscription
                 </button>
-              </div>
+              )}
             </div>
-          </section>
-
-          {notice && (
-            <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-foreground">
-              {notice}
-            </div>
-          )}
-          {error && (
-            <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <section className="mt-8 rounded-[2rem] border border-border bg-white/80 p-5 shadow-[0_25px_70px_-50px_rgba(0,0,0,0.35)] sm:p-6 lg:p-7">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Plans</div>
-                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">Compact pricing</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPlans((value) => !value)}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground transition-transform hover:scale-[1.01]"
-              >
-                {showPlans ? "Show less" : "Expand plans"}
-              </button>
-            </div>
-            <div className="mt-5">{planCards}</div>
-          </section>
-
-          <div className="mt-8 grid gap-5 lg:grid-cols-3">
-            <section className="rounded-[2rem] border border-primary/20 bg-white/80 p-5 shadow-[0_25px_70px_-50px_rgba(0,0,0,0.35)] lg:col-span-2 lg:p-7">
-              <div className="flex items-start justify-between gap-4">
-                <div className="inline-flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-                    <Sparkles className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Current plan</div>
-                    <div className="font-display text-3xl font-bold tracking-tight text-foreground">{currentPlan}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-display text-3xl font-bold text-foreground">
-                    {billing?.summary.accountRole === "pro" ? "Paid" : "Free"}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {billing?.summary.accountRole === "pro" ? "active subscription" : "forever"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Plan type</div>
-                  <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
-                    <BadgeCheck className="h-4 w-4 text-primary" />
-                    {billing?.summary.accountRole === "pro" ? "Pro subscription" : "Free tier"}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Account</div>
-                  <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
-                    <ShieldCheck className="h-4 w-4 text-primary" />
-                    {email}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-primary/15 bg-gradient-to-r from-primary/10 to-primary/5 p-4 sm:p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Verified payments</div>
-                    <div className="mt-2 text-2xl font-semibold">{paymentCount}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">Latest payment</div>
-                    <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm font-medium text-foreground shadow-sm">
-                      <Zap className="h-4 w-4 text-primary" />
-                      {latestPayment}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 h-2 rounded-full bg-primary/15">
-                  <div className="h-2 w-[12%] rounded-full bg-primary" />
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Total spent</div>
-                  <div className="mt-2 text-3xl font-bold tracking-tight">{totalSpent}</div>
-                  <div className="mt-1 text-sm text-muted-foreground">Verified by Razorpay</div>
-                </div>
-                <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Payment method</div>
-                  <div className="mt-2 text-3xl font-bold tracking-tight">UPI + Razorpay</div>
-                  <div className="mt-1 text-sm text-muted-foreground">Live checkout enabled</div>
-                </div>
-                <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Status</div>
-                  <div className="mt-2 text-3xl font-bold tracking-tight">
-                    {loading ? "Loading" : billing?.summary.accountRole === "pro" ? "Active" : "Free"}
-                  </div>
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    {loading ? "Syncing billing data" : "Account ready"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={startCheckout}
-                  className="inline-flex items-center gap-2 rounded-full border border-primary/70 bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-[0_6px_0_0_rgb(15_118_110)] transition-transform hover:translate-y-[1px] disabled:opacity-70"
-                  disabled={busyPlan !== null}
-                >
-                  <CreditCard className="h-4 w-4" />
-                  Upgrade with Razorpay
-                </button>
-                <Link
-                  to="/pricing"
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-3 text-sm font-semibold text-foreground transition-transform hover:scale-[1.01]"
-                >
-                  View pricing
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </section>
-
-            <aside className="rounded-[2rem] border border-border bg-white/80 p-5 shadow-[0_25px_70px_-50px_rgba(0,0,0,0.35)] sm:p-6 lg:p-7">
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Banknote className="h-5 w-5 text-primary" />
-                Payment methods
-              </div>
-
-              <div className="mt-5 space-y-4">
-                <div className="rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 to-background p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="inline-flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-border">
-                        <img src={upiLogo} alt="UPI logo" className="h-8 w-auto object-contain" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">UPI</div>
-                        <div className="mt-1 text-lg font-semibold">India - Instant</div>
-                      </div>
-                    </div>
-                    <div className="rounded-full border border-primary/20 bg-white px-3 py-1 text-[10px] font-mono uppercase tracking-[0.24em] text-muted-foreground">
-                      Default
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-2xl border border-border bg-white/70 p-4">
-                    <div className="text-xl font-medium tracking-tight">{upiId}</div>
-                    <div className="mt-1 text-sm text-muted-foreground">GPay - PhonePe - Paytm - BHIM</div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={payWithUpi}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-[0_6px_0_0_rgb(15_118_110)] transition-transform hover:translate-y-[1px]"
-                  >
-                    Pay via UPI app
-                    <ArrowUpRight className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div className="rounded-3xl border border-border bg-background/80 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="inline-flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0f172a] shadow-sm ring-1 ring-border">
-                        <img src={razorpayLogo} alt="Razorpay logo" className="h-4 w-auto object-contain" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Razorpay</div>
-                        <div className="mt-1 text-lg font-semibold">Checkout powered</div>
-                      </div>
-                    </div>
-                    <div className="rounded-full border border-border bg-white px-3 py-1 text-[10px] font-mono uppercase tracking-[0.24em] text-muted-foreground">
-                      Secure
-                    </div>
-                  </div>
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    Accepts UPI, cards, netbanking, wallets, and other Razorpay-supported methods.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={startCheckout}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-white px-4 py-3 text-sm font-semibold text-foreground transition-transform hover:scale-[1.01] disabled:opacity-70"
-                    disabled={busyPlan !== null}
-                  >
-                    Open Razorpay checkout
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-dashed border-border bg-surface/60 p-4">
-                <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 text-primary" />
-                  <p>
-                    Razorpay payments are verified before they are written to your billing history. UPI opens your native app
-                    using the configured payee ID.
-                  </p>
-                </div>
-              </div>
-            </aside>
           </div>
 
-          <section className="mt-8 rounded-[2rem] border border-border bg-white/80 p-5 shadow-[0_25px_70px_-50px_rgba(0,0,0,0.35)] sm:p-6 lg:p-7">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Billing history</div>
-                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">Verified payments</h2>
-              </div>
-              <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
-                {billing?.payments.length ?? 0} records
+          <div className="rounded-2xl border border-border bg-surface/40 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-primary" />
+                <h2 className="font-display text-lg font-bold">Payment method</h2>
               </div>
             </div>
 
-            {loading && <div className="mt-5 text-sm text-muted-foreground">Loading billing history...</div>}
-
-            {!loading && (billing?.payments.length ?? 0) === 0 && (
-              <div className="mt-5 rounded-2xl border border-border bg-surface/50 p-6 text-sm text-muted-foreground">
-                No verified payments yet. Once a Razorpay payment succeeds, it will appear here automatically.
+            <div className="relative rounded-xl p-5 bg-gradient-to-br from-primary/15 via-surface to-background border border-primary/30 overflow-hidden">
+              <div className="absolute top-2 right-3 text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+                Default
               </div>
-            )}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-9 h-9 rounded-lg bg-background border border-border flex items-center justify-center">
+                  <Smartphone className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">UPI</div>
+                  <div className="text-sm font-semibold">India · Instant</div>
+                </div>
+              </div>
+              <div className="font-mono text-sm text-foreground select-all break-all">{UPI_ID}</div>
+              <div className="mt-3 text-[10px] text-muted-foreground">
+                GPay · PhonePe · Paytm · BHIM
+              </div>
+            </div>
 
-            {!loading && (billing?.payments.length ?? 0) > 0 && (
-              <div className="mt-5 overflow-hidden rounded-2xl border border-border">
-                <table className="min-w-full divide-y divide-border text-left">
-                  <thead className="bg-surface/60">
-                    <tr className="text-xs font-mono uppercase tracking-[0.22em] text-muted-foreground">
-                      <th className="px-5 py-4">Date</th>
-                      <th className="px-5 py-4">Plan</th>
-                      <th className="px-5 py-4">Amount</th>
-                      <th className="px-5 py-4">Method</th>
-                      <th className="px-5 py-4">Status</th>
-                      <th className="px-5 py-4">Reference</th>
+            <button
+              type="button"
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-border hover:border-primary/50 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add card or new method
+            </button>
+
+            <div className="mt-4 flex items-start gap-2 text-[11px] text-muted-foreground">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+              <span>Cards & Stripe coming soon. UPI is the active method today.</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-6 pb-10">
+          <div className="grid sm:grid-cols-3 gap-4">
+            {[
+              { label: "Total spent", value: isPaid ? "₹147.00" : "₹0.00", sub: isPaid ? "Last 3 cycles" : "No charges yet" },
+              { label: "Specs generated", value: String(usage), sub: "Lifetime" },
+              { label: "Member since", value: "Apr 2026", sub: email },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl border border-border bg-surface/40 p-5">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                  {s.label}
+                </div>
+                <div className="font-display text-2xl font-bold mt-1">{s.value}</div>
+                <div className="text-xs text-muted-foreground mt-1 truncate">{s.sub}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-6 pb-16">
+          <div className="rounded-2xl border border-border bg-surface/40 overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-primary" />
+                <h2 className="font-display text-lg font-bold">Invoices</h2>
+              </div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                {SAMPLE_INVOICES.length} records
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[10px] font-mono uppercase tracking-wider text-muted-foreground border-b border-border">
+                    <th className="px-6 py-3 font-medium">Invoice</th>
+                    <th className="px-6 py-3 font-medium">Date</th>
+                    <th className="px-6 py-3 font-medium">Plan</th>
+                    <th className="px-6 py-3 font-medium">Amount</th>
+                    <th className="px-6 py-3 font-medium">Status</th>
+                    <th className="px-6 py-3 font-medium text-right">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SAMPLE_INVOICES.map((inv) => (
+                    <tr key={inv.id} className="border-b border-border/60 last:border-0 hover:bg-background/40 transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs">{inv.id}</td>
+                      <td className="px-6 py-4 text-muted-foreground">{inv.date}</td>
+                      <td className="px-6 py-4">{inv.plan}</td>
+                      <td className="px-6 py-4 font-semibold">{inv.amount}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider ${
+                            inv.status === "Paid"
+                              ? "bg-primary/15 text-primary"
+                              : inv.status === "Pending"
+                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                              : "bg-destructive/15 text-destructive"
+                          }`}
+                        >
+                          {inv.status === "Paid" && <Check className="w-3 h-3" />}
+                          {inv.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          PDF
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border bg-white">
-                    {(billing?.payments ?? []).map((payment) => (
-                      <tr key={payment.id} className="text-sm">
-                        <td className="px-5 py-5 text-muted-foreground">{formatPaymentDate(payment)}</td>
-                        <td className="px-5 py-5 font-medium text-foreground">{formatPlanLabel(payment.plan)}</td>
-                        <td className="px-5 py-5 font-semibold text-foreground">Rs {payment.amount_in_inr.toFixed(2)}</td>
-                        <td className="px-5 py-5 text-foreground">{payment.method ?? "razorpay"}</td>
-                        <td className="px-5 py-5">
-                          <span
-                            className={[
-                              "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
-                              payment.status === "completed"
-                                ? "bg-primary/10 text-primary"
-                                : payment.status === "pending"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-red-100 text-red-700",
-                            ].join(" ")}
-                          >
-                            {payment.status}
-                          </span>
-                        </td>
-                        <td className="px-5 py-5">
-                          <div className="text-sm font-medium text-foreground">{shortReference(payment.payment_id)}</div>
-                          <div className="mt-1 text-xs text-muted-foreground">{payment.receipt}</div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-border bg-surface/50 p-4">
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Payment speed</div>
-                <div className="mt-2 text-lg font-semibold">Instant UPI first</div>
-              </div>
-              <div className="rounded-2xl border border-border bg-surface/50 p-4">
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Security</div>
-                <div className="mt-2 text-lg font-semibold">Razorpay verified</div>
-              </div>
-              <div className="rounded-2xl border border-border bg-surface/50 p-4">
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Billing cycle</div>
-                <div className="mt-2 text-lg font-semibold">Monthly renewal</div>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-
-            {!session?.user && (
-              <div className="mt-4 text-sm text-muted-foreground">
-                Sign in to sync your billing state and verified payment history.
-              </div>
-            )}
-          </section>
-        </div>
+          </div>
+        </section>
       </main>
     </div>
   );
-}
-
-function formatPaymentDate(payment: BillingPaymentRecord) {
-  return new Date(payment.paid_at).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatPlanLabel(plan: BillingPaymentRecord["plan"]) {
-  if (plan === "pro") return "Pro Monthly";
-  if (plan === "enterprise") return "Enterprise";
-  return "Custom";
-}
-
-function shortReference(reference: string) {
-  if (reference.length <= 10) return reference;
-  return `${reference.slice(0, 5)}...${reference.slice(-4)}`;
 }

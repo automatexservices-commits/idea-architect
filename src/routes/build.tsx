@@ -506,7 +506,7 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
     <section className="mx-auto max-w-3xl px-6 py-16 animate-fade-up">
       <div className="text-center mb-10">
         <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">What are you building?</h1>
-        <p className="mt-4 text-muted-foreground">Drop a sentence or a paragraph. The vaguer the better — we'll ask the rest.</p>
+        <p className="mt-4 text-muted-foreground">Drop a sentence or a paragraph. The vaguer the better - we'll ask the rest.</p>
       </div>
 
       <div className="space-y-4">
@@ -523,7 +523,7 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
 
         <details className="group">
           <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
-            <span className="group-open:rotate-90 transition-transform inline-block">▸</span>
+            <span className="group-open:rotate-90 transition-transform inline-block">{">"}</span>
             Add specs (optional)
           </summary>
           <textarea
@@ -870,3 +870,5 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
     </section>
   );
 }
+
+

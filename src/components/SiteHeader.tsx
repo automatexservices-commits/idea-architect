@@ -15,7 +15,7 @@ export function SiteHeader() {
   const router = useRouter();
   const { pathname } = useLocation();
   const [isHydrated, setIsHydrated] = useState(false);
-  
+
   useEffect(() => {
     setIsHydrated(true);
   }, []);
@@ -34,7 +34,6 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 w-full bg-background/95 border-b border-border/50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 h-20 sm:h-24 flex items-center justify-between gap-3 sm:gap-6">
-        {/* Left: Back + Brand */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
           {showBack && (
             <button
@@ -53,7 +52,7 @@ export function SiteHeader() {
                 src={plannrLogo}
                 alt="PLANNR"
                 className="h-full w-full object-contain rounded-full"
-                style={showMarkOnly ? { transform: 'translateY(-12%) scale(1.18)' } : undefined}
+                style={showMarkOnly ? { transform: "translateY(-12%) scale(1.18)" } : undefined}
               />
             </span>
             <span className="hidden sm:flex flex-col leading-tight min-w-0">
@@ -67,7 +66,6 @@ export function SiteHeader() {
           </Link>
         </div>
 
-        {/* Right side: nav links + CTA */}
         <div className="flex items-center gap-2 sm:gap-4 md:gap-8">
           <nav className="hidden md:flex items-center gap-7 text-sm text-muted-foreground">
             <Link to="/" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>

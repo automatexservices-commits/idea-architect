@@ -5,6 +5,7 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import pkg from "@lovable.dev/vite-tanstack-config";
+import { nitro } from "nitro/vite";
 import { loadEnv } from "vite";
 
 const { defineConfig } = pkg as any;
@@ -29,6 +30,8 @@ export default defineConfig(({ mode }) => {
 		: undefined;
 
 	return {
+		cloudflare: false,
+		plugins: [nitro()],
 		vite: {
 			server: {
 				port: 5173,

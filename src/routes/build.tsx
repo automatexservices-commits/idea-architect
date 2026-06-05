@@ -68,10 +68,20 @@ type BackendGenerateResponse = {
   downloadUrl?: string;
 };
 
+type UsageStateResponse = {
+  success: boolean;
+  role: "free" | "pro" | "enterprise";
+  limit: number;
+  used: number;
+  remaining: number;
+  blocked: boolean;
+  error?: string;
+};
+
 function formatFrontendErrorMessage(message: unknown) {
   const m = typeof message === "string" ? message : String(message ?? "");
   if (/generation limit exceeded|daily generation limit|daily generation limit exceeded|free limit reached|LIMIT_EXCEEDED|limit exceeded|quota/i.test(m)) {
-    return "You hit your plan limit. Upgrade to generate more.";
+    return "You hit your free plan limit of 1 spec. Upgrade to generate more.";
   }
   return m;
 }
@@ -236,6 +246,28 @@ function BuildPage() {
     setLoading(true);
     setError(null);
     try {
+      if (backendSession?.accessToken) {
+        const headers = await getAuthHeaders(backendSession);
+        const { response, body } = await requestInsforgeJson<UsageStateResponse>(
+          "/usage",
+          {},
+          headers,
+        );
+
+        if (!response.ok || !body?.success) {
+          throw new Error(
+            body && typeof body === "object" && "error" in body && typeof body.error === "string"
+              ? body.error
+              : `Failed to verify plan usage (${response.status})`,
+          );
+        }
+
+        if (body.blocked) {
+          setError(`You have reached the free plan limit of ${body.limit} spec${body.limit === 1 ? "" : "s"}. Upgrade to generate more.`);
+          return;
+        }
+      }
+
       const res = await genQuestions({ data: { idea, specs } } as any);
       setProjectName(res.projectName);
       setQuestions(res.questions);

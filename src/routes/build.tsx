@@ -603,7 +603,7 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
           type="button"
           onClick={onNext}
           disabled={!idea.trim() || loading}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-medium text-primary-foreground shadow-lg transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 mt-4"
+          className="btn-3d w-full mt-4"
         >
           {loading ? (
             <>

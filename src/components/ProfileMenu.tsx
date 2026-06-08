@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { History, Settings, LogOut, Sparkles, FileText, CreditCard } from "lucide-react";
+import { History, LogOut, Sparkles, FileText, CreditCard } from "lucide-react";
 import { useAuth, useAuthActions } from "@/features/auth";
 import { getSession, refreshSessionToken } from "@/features/auth";
 import { requestInsforgeJson } from "@/lib/insforge-backend";
@@ -43,23 +43,25 @@ async function fetchRecentHistory(): Promise<HistoryItem[]> {
   }
 
   const token = session?.accessToken;
-  let { response, body } = await requestInsforgeJson<{ success: boolean; history: HistoryItem[]; error?: string }>(
-    "/history",
-    {},
-    { Authorization: token ? `Bearer ${token}` : "" },
-  );
+  let { response, body } = await requestInsforgeJson<{
+    success: boolean;
+    history: HistoryItem[];
+    error?: string;
+  }>("/history", {}, { Authorization: token ? `Bearer ${token}` : "" });
   if (response.status === 401) {
     const refreshed = await refreshSessionToken();
     if (refreshed?.accessToken) {
-      ({ response, body } = await requestInsforgeJson<{ success: boolean; history: HistoryItem[]; error?: string }>(
-        "/history",
-        {},
-        { Authorization: `Bearer ${refreshed.accessToken}` },
-      ));
+      ({ response, body } = await requestInsforgeJson<{
+        success: boolean;
+        history: HistoryItem[];
+        error?: string;
+      }>("/history", {}, { Authorization: `Bearer ${refreshed.accessToken}` }));
     }
   }
   if (!response.ok || !body?.success || !Array.isArray(body.history)) return [];
-  return (body.history as any[]).slice(0, 8).map((r) => ({ id: r.id, project_name: r.project_name, created_at: r.created_at }));
+  return (body.history as any[])
+    .slice(0, 8)
+    .map((r) => ({ id: r.id, project_name: r.project_name, created_at: r.created_at }));
 }
 
 export function ProfileMenu() {
@@ -215,14 +217,6 @@ export function ProfileMenu() {
               <FileText className="w-4 h-4 text-primary" />
               Docs
             </Link>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-surface transition-colors text-left"
-            >
-              <Settings className="w-4 h-4 text-primary" />
-              Settings
-            </button>
           </div>
 
           <div className="px-3 py-3 border-t border-border bg-surface/40">
@@ -298,7 +292,9 @@ export function MobileProfileMenuSection({ isOpen, onNavigate }: MobileProfileMe
             <span className="text-sm font-bold text-primary-foreground">{initials}</span>
           </div>
           <div className="min-w-0">
-            <div className="font-display font-semibold text-sm leading-tight truncate">{displayName}</div>
+            <div className="font-display font-semibold text-sm leading-tight truncate">
+              {displayName}
+            </div>
             <div className="text-[11px] text-muted-foreground font-mono truncate">
               {user?.email ?? "Not signed in"} Â· {statusLine}
             </div>
@@ -343,14 +339,6 @@ export function MobileProfileMenuSection({ isOpen, onNavigate }: MobileProfileMe
             <FileText className="w-4 h-4 text-primary" />
             Docs
           </Link>
-          <button
-            type="button"
-            onClick={onNavigate}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-left hover:bg-surface transition-colors"
-          >
-            <Settings className="w-4 h-4 text-primary" />
-            Settings
-          </button>
         </div>
       </div>
 

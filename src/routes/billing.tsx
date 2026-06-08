@@ -28,9 +28,17 @@ export const Route = createFileRoute("/billing")({
   head: () => ({
     meta: [
       { title: "PLANNR Dashboard | Your Daily Command Center" },
-      { name: "description", content: "Track tasks, deadlines, priorities, and progress in PLANNR's dashboard built for focused study and work." },
+      {
+        name: "description",
+        content:
+          "Track tasks, deadlines, priorities, and progress in PLANNR's dashboard built for focused study and work.",
+      },
       { property: "og:title", content: "PLANNR Dashboard | Your Daily Command Center" },
-      { property: "og:description", content: "Track tasks, deadlines, priorities, and progress in PLANNR's dashboard built for focused study and work." },
+      {
+        property: "og:description",
+        content:
+          "Track tasks, deadlines, priorities, and progress in PLANNR's dashboard built for focused study and work.",
+      },
     ],
   }),
   component: BillingDashboardPage,
@@ -167,20 +175,24 @@ function BillingDashboardPage() {
         <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
           <section className="rounded-[2rem] border border-primary/15 bg-gradient-to-br from-primary/10 via-background to-background p-6 shadow-[0_20px_70px_-40px_rgba(0,0,0,0.35)] sm:p-8 lg:p-10">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div>
+              <div className="min-w-0 lg:flex-1">
                 <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.28em] text-muted-foreground">
                   <IndianRupee className="h-4 w-4 text-primary" />
                   Billing dashboard
                 </div>
                 <h1 className="mt-4 font-display text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                  Hello, <span className="text-primary">{displayName}</span>
+                  Hello,
+                  <span className="mt-1 block max-w-full truncate text-primary" title={displayName}>
+                    {displayName}
+                  </span>
                 </h1>
                 <p className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-                  Manage your subscription, payment methods, and verified payment history from one polished dashboard.
+                  Manage your subscription, payment methods, and verified payment history from one
+                  polished dashboard.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 lg:shrink-0">
                 <Link
                   to="/pricing"
                   className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-3 text-sm font-semibold text-foreground shadow-sm transition-transform hover:scale-[1.01]"
@@ -214,8 +226,12 @@ function BillingDashboardPage() {
           <section className="mt-8 rounded-[2rem] border border-border bg-white/80 p-5 shadow-[0_25px_70px_-50px_rgba(0,0,0,0.35)] sm:p-6 lg:p-7">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Plans</div>
-                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">Compact pricing</h2>
+                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                  Plans
+                </div>
+                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
+                  Compact pricing
+                </h2>
               </div>
               <button
                 type="button"
@@ -236,8 +252,12 @@ function BillingDashboardPage() {
                     <Sparkles className="h-6 w-6" />
                   </div>
                   <div>
-                    <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Current plan</div>
-                    <div className="font-display text-3xl font-bold tracking-tight text-foreground">{currentPlan}</div>
+                    <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                      Current plan
+                    </div>
+                    <div className="font-display text-3xl font-bold tracking-tight text-foreground">
+                      {currentPlan}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -252,14 +272,18 @@ function BillingDashboardPage() {
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Plan type</div>
+                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                    Plan type
+                  </div>
                   <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
                     <BadgeCheck className="h-4 w-4 text-primary" />
                     {billing?.summary.accountRole === "pro" ? "Pro subscription" : "Free tier"}
                   </div>
                 </div>
                 <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Account</div>
+                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                    Account
+                  </div>
                   <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
                     <ShieldCheck className="h-4 w-4 text-primary" />
                     {email}
@@ -288,19 +312,29 @@ function BillingDashboardPage() {
 
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Total spent</div>
+                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                    Total spent
+                  </div>
                   <div className="mt-2 text-3xl font-bold tracking-tight">{totalSpent}</div>
                   <div className="mt-1 text-sm text-muted-foreground">Verified by Razorpay</div>
                 </div>
                 <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Payment method</div>
+                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                    Payment method
+                  </div>
                   <div className="mt-2 text-3xl font-bold tracking-tight">UPI + Razorpay</div>
                   <div className="mt-1 text-sm text-muted-foreground">Live checkout enabled</div>
                 </div>
                 <div className="rounded-2xl border border-border bg-background/70 p-4">
-                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Status</div>
+                  <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                    Status
+                  </div>
                   <div className="mt-2 text-3xl font-bold tracking-tight">
-                    {loading ? "Loading" : billing?.summary.accountRole === "pro" ? "Active" : "Free"}
+                    {loading
+                      ? "Loading"
+                      : billing?.summary.accountRole === "pro"
+                        ? "Active"
+                        : "Free"}
                   </div>
                   <div className="mt-1 text-sm text-muted-foreground">
                     {loading ? "Syncing billing data" : "Account ready"}
@@ -339,10 +373,16 @@ function BillingDashboardPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="inline-flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0f172a] shadow-sm ring-1 ring-border">
-                        <img src={razorpayLogo} alt="Razorpay logo" className="h-4 w-auto object-contain" />
+                        <img
+                          src={razorpayLogo}
+                          alt="Razorpay logo"
+                          className="h-4 w-auto object-contain"
+                        />
                       </div>
                       <div>
-                        <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Razorpay</div>
+                        <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                          Razorpay
+                        </div>
                         <div className="mt-1 text-lg font-semibold">Checkout powered</div>
                       </div>
                     </div>
@@ -369,8 +409,8 @@ function BillingDashboardPage() {
                 <div className="flex items-start gap-2 text-sm text-muted-foreground">
                   <ShieldCheck className="mt-0.5 h-4 w-4 text-primary" />
                   <p>
-                    Razorpay payments are verified before they are written to your billing history. UPI opens your native app
-                    using the configured payee ID.
+                    Razorpay payments are verified before they are written to your billing history.
+                    UPI opens your native app using the configured payee ID.
                   </p>
                 </div>
               </div>
@@ -380,19 +420,26 @@ function BillingDashboardPage() {
           <section className="mt-8 rounded-[2rem] border border-border bg-white/80 p-5 shadow-[0_25px_70px_-50px_rgba(0,0,0,0.35)] sm:p-6 lg:p-7">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Billing history</div>
-                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">Verified payments</h2>
+                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                  Billing history
+                </div>
+                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
+                  Verified payments
+                </h2>
               </div>
               <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
                 {billing?.payments.length ?? 0} records
               </div>
             </div>
 
-            {loading && <div className="mt-5 text-sm text-muted-foreground">Loading billing history...</div>}
+            {loading && (
+              <div className="mt-5 text-sm text-muted-foreground">Loading billing history...</div>
+            )}
 
             {!loading && (billing?.payments.length ?? 0) === 0 && (
               <div className="mt-5 rounded-2xl border border-border bg-surface/50 p-6 text-sm text-muted-foreground">
-                No verified payments yet. Once a Razorpay payment succeeds, it will appear here automatically.
+                No verified payments yet. Once a Razorpay payment succeeds, it will appear here
+                automatically.
               </div>
             )}
 
@@ -412,10 +459,18 @@ function BillingDashboardPage() {
                   <tbody className="divide-y divide-border bg-white">
                     {(billing?.payments ?? []).map((payment) => (
                       <tr key={payment.id} className="text-sm">
-                        <td className="px-5 py-5 text-muted-foreground">{formatPaymentDate(payment)}</td>
-                        <td className="px-5 py-5 font-medium text-foreground">{formatPlanLabel(payment.plan)}</td>
-                        <td className="px-5 py-5 font-semibold text-foreground">Rs {payment.amount_in_inr.toFixed(2)}</td>
-                        <td className="px-5 py-5 text-foreground">{payment.method ?? "razorpay"}</td>
+                        <td className="px-5 py-5 text-muted-foreground">
+                          {formatPaymentDate(payment)}
+                        </td>
+                        <td className="px-5 py-5 font-medium text-foreground">
+                          {formatPlanLabel(payment.plan)}
+                        </td>
+                        <td className="px-5 py-5 font-semibold text-foreground">
+                          Rs {payment.amount_in_inr.toFixed(2)}
+                        </td>
+                        <td className="px-5 py-5 text-foreground">
+                          {payment.method ?? "razorpay"}
+                        </td>
                         <td className="px-5 py-5">
                           <span
                             className={[
@@ -431,8 +486,12 @@ function BillingDashboardPage() {
                           </span>
                         </td>
                         <td className="px-5 py-5">
-                          <div className="text-sm font-medium text-foreground">{shortReference(payment.payment_id)}</div>
-                          <div className="mt-1 text-xs text-muted-foreground">{payment.receipt}</div>
+                          <div className="text-sm font-medium text-foreground">
+                            {shortReference(payment.payment_id)}
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {payment.receipt}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -443,15 +502,21 @@ function BillingDashboardPage() {
 
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               <div className="rounded-2xl border border-border bg-surface/50 p-4">
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Payment speed</div>
+                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                  Payment speed
+                </div>
                 <div className="mt-2 text-lg font-semibold">Instant UPI first</div>
               </div>
               <div className="rounded-2xl border border-border bg-surface/50 p-4">
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Security</div>
+                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                  Security
+                </div>
                 <div className="mt-2 text-lg font-semibold">Razorpay verified</div>
               </div>
               <div className="rounded-2xl border border-border bg-surface/50 p-4">
-                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">Billing cycle</div>
+                <div className="text-xs font-mono uppercase tracking-[0.24em] text-muted-foreground">
+                  Billing cycle
+                </div>
                 <div className="mt-2 text-lg font-semibold">Monthly renewal</div>
               </div>
             </div>

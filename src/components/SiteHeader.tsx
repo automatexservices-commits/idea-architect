@@ -2,7 +2,8 @@ import { Link, useRouter, useLocation } from "@tanstack/react-router";
 import { ArrowLeft, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import plannrLogo from "@/assets/plannr-logo.png";
-import { ProfileMenu } from "@/components/ProfileMenu";
+import { MobileProfileMenuSection, ProfileMenu } from "@/components/ProfileMenu";
+import { useAuth } from "@/features/auth";
 import {
   Sheet,
   SheetContent,
@@ -14,7 +15,9 @@ import {
 export function SiteHeader() {
   const router = useRouter();
   const { pathname } = useLocation();
+  const { session } = useAuth();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -29,6 +32,10 @@ export function SiteHeader() {
     } else {
       router.navigate({ to: "/" });
     }
+  };
+
+  const closeMobileMenu = () => {
+    setMobileOpen(false);
   };
 
   return (
@@ -93,7 +100,7 @@ export function SiteHeader() {
           </div>
 
           <div className="sm:hidden">
-            <Sheet>
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
                 <button
                   type="button"
@@ -103,37 +110,59 @@ export function SiteHeader() {
                   <Menu className="w-5 h-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[86vw] max-w-sm p-5">
+              <SheetContent side="right" className="w-[86vw] max-w-sm p-5 overflow-y-auto flex flex-col">
                 <SheetHeader className="text-left">
                   <SheetTitle className="font-display text-2xl">PLANNR</SheetTitle>
                 </SheetHeader>
+                <div className="mt-6">
+                  <MobileProfileMenuSection isOpen={mobileOpen} onNavigate={closeMobileMenu} />
+                </div>
                 <div className="mt-6 flex flex-col gap-2">
-                  <Link to="/" className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors">
+                  <Link
+                    to="/"
+                    onClick={closeMobileMenu}
+                    className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors"
+                  >
                     Home
                   </Link>
-                  <Link to="/examples" className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors">
+                  <Link
+                    to="/examples"
+                    onClick={closeMobileMenu}
+                    className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors"
+                  >
                     Examples
                   </Link>
-                  <Link to="/pricing" className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors">
+                  <Link
+                    to="/pricing"
+                    onClick={closeMobileMenu}
+                    className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors"
+                  >
                     Pricing
                   </Link>
-                  <Link to="/docs" className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors">
+                  <Link
+                    to="/docs"
+                    onClick={closeMobileMenu}
+                    className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors"
+                  >
                     Docs
                   </Link>
-                  <Link to="/build" className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors">
+                  <Link
+                    to="/build"
+                    onClick={closeMobileMenu}
+                    className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-surface transition-colors"
+                  >
                     Build
                   </Link>
                 </div>
                 <div className="mt-6 flex flex-col gap-3">
-                  <Link to="/build" className="btn-3d btn-3d-sm w-full">
+                  <Link to="/build" onClick={closeMobileMenu} className="btn-3d btn-3d-sm w-full">
                     Start Building
                   </Link>
-                  <Link to="/welcome" className="btn-3d btn-3d-sm btn-3d-outline w-full">
-                    Sign in
-                  </Link>
-                </div>
-                <div className="mt-6 border-t border-border pt-5">
-                  <ProfileMenu />
+                  {!session?.user && (
+                    <Link to="/welcome" onClick={closeMobileMenu} className="btn-3d btn-3d-sm btn-3d-outline w-full">
+                      Sign in
+                    </Link>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>

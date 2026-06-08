@@ -4,6 +4,7 @@ import { History, Settings, LogOut, Sparkles, FileText, CreditCard } from "lucid
 import { useAuth, useAuthActions } from "@/features/auth";
 import { getSession, refreshSessionToken } from "@/features/auth";
 import { requestInsforgeJson } from "@/lib/insforge-backend";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type HistoryItem = {
   id: string;
@@ -236,6 +237,167 @@ export function ProfileMenu() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+type MobileProfileMenuProps = {
+  isOpen: boolean;
+  onNavigate: () => void;
+};
+
+export function MobileProfileMenuSection({ isOpen, onNavigate }: MobileProfileMenuProps) {
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const { user, session } = useAuth();
+  const { signOut: logout } = useAuthActions();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let mounted = true;
+    void (async () => {
+      try {
+        const h = await fetchRecentHistory();
+        if (mounted) setHistory(h);
+      } catch {
+        if (mounted) setHistory([]);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen]);
+
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email ||
+    "Guest builder";
+  const statusLine = session?.user ? "Logged in" : "Free plan";
+  const primaryActionLabel = session?.user ? "Log out" : "Log in";
+  const initials = getInitials(displayName);
+
+  const handlePrimaryAction = async () => {
+    onNavigate();
+    if (session?.user) {
+      try {
+        await logout();
+        sessionStorage.removeItem("plannr-entered");
+      } catch {}
+      window.location.href = "/welcome";
+      return;
+    }
+
+    window.location.href = "/welcome";
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center ring-2 ring-primary/30">
+            <span className="text-sm font-bold text-primary-foreground">{initials}</span>
+          </div>
+          <div className="min-w-0">
+            <div className="font-display font-semibold text-sm leading-tight truncate">{displayName}</div>
+            <div className="text-[11px] text-muted-foreground font-mono truncate">
+              {user?.email ?? "Not signed in"} Â· {statusLine}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-2">
+        <div className="px-2 pb-2 pt-1 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+          Account actions
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <Link
+            to="/profile"
+            onClick={onNavigate}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm hover:bg-surface transition-colors"
+          >
+            <History className="w-4 h-4 text-primary" />
+            Profile & history
+          </Link>
+          <Link
+            to="/build"
+            onClick={onNavigate}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm hover:bg-surface transition-colors"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            New spec
+          </Link>
+          <Link
+            to="/billing"
+            onClick={onNavigate}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm hover:bg-surface transition-colors"
+          >
+            <CreditCard className="w-4 h-4 text-primary" />
+            Billing & plans
+          </Link>
+          <Link
+            to="/docs"
+            onClick={onNavigate}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm hover:bg-surface transition-colors"
+          >
+            <FileText className="w-4 h-4 text-primary" />
+            Docs
+          </Link>
+          <button
+            type="button"
+            onClick={onNavigate}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-left hover:bg-surface transition-colors"
+          >
+            <Settings className="w-4 h-4 text-primary" />
+            Settings
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-2">
+        <div className="px-2 pb-2 pt-1 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+          Recent specs
+        </div>
+        <ScrollArea className="h-44">
+          <div className="px-1 pb-1 pr-3">
+            {history.length === 0 ? (
+              <div className="mx-1 rounded-xl bg-surface/60 px-3 py-4 text-center text-xs text-muted-foreground">
+                No history yet - generate your first spec.
+              </div>
+            ) : (
+              <ul className="space-y-0.5">
+                {history.map((h) => (
+                  <li key={h.id}>
+                    <Link
+                      to="/profile"
+                      onClick={onNavigate}
+                      className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm hover:bg-surface transition-colors"
+                    >
+                      <span className="truncate">{h.project_name}</span>
+                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                        {timeAgo(h.created_at)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      <div className="pt-1">
+        <button
+          type="button"
+          onClick={handlePrimaryAction}
+          className="w-full rounded-xl border border-border px-3 py-3 text-sm font-medium hover:border-destructive/50 hover:text-destructive transition-colors"
+        >
+          <span className="inline-flex items-center gap-2">
+            <LogOut className="w-4 h-4" />
+            {primaryActionLabel}
+          </span>
+        </button>
+      </div>
     </div>
   );
 }

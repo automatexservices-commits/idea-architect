@@ -132,6 +132,9 @@ export function SiteHeader() {
                     Sign in
                   </Link>
                 </div>
+                <div className="mt-6 border-t border-border pt-5">
+                  <ProfileMenu />
+                </div>
               </SheetContent>
             </Sheet>
           </div>

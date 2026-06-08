@@ -1,21 +1,42 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, ArrowLeft, Loader2, Sparkles, Download, FileText, Check, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Loader2,
+  Sparkles,
+  Download,
+  FileText,
+  Check,
+  RefreshCw,
+} from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { InteractiveGrid } from "@/components/InteractiveGrid";
 import { FileTree, type TreeNode } from "@/components/FileTree";
 import { VibePlatforms } from "@/components/VibePlatforms";
 import { useAuth, getSession, refreshSessionToken } from "@/features/auth";
+import { openPricingCheckout } from "@/features/billing/checkout";
 import { useServerFn } from "@tanstack/react-start";
 import { generateQuestions } from "@/lib/specai-server.functions";
 import { requestInsforgeJson } from "@/lib/insforge-backend";
 import JSZip from "jszip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/build")({
   head: () => ({
     meta: [
       { title: "Build your spec — PLANNR" },
-      { name: "description", content: "Turn your idea into a complete project specification with AI-guided clarification, stack recommendations, and structured docs." },
+      {
+        name: "description",
+        content:
+          "Turn your idea into a complete project specification with AI-guided clarification, stack recommendations, and structured docs.",
+      },
     ],
   }),
   component: BuildPage,
@@ -56,7 +77,10 @@ type BackendProjectResponse = {
   project: { id: string; title: string; idea: string };
   documents?: Array<{
     document_type: string;
-    latest_version?: { content_markdown?: string; structured_data?: Record<string, unknown> } | null;
+    latest_version?: {
+      content_markdown?: string;
+      structured_data?: Record<string, unknown>;
+    } | null;
   }>;
   downloadUrl?: string;
 };
@@ -78,12 +102,38 @@ type UsageStateResponse = {
   error?: string;
 };
 
+type LimitDialogState = {
+  role: "free" | "pro" | "enterprise";
+  description: string;
+};
+
 function formatFrontendErrorMessage(message: unknown) {
   const m = typeof message === "string" ? message : String(message ?? "");
-  if (/generation limit exceeded|daily generation limit|daily generation limit exceeded|free limit reached|LIMIT_EXCEEDED|limit exceeded|quota/i.test(m)) {
+  if (
+    /generation limit exceeded|daily generation limit|daily generation limit exceeded|free limit reached|LIMIT_EXCEEDED|limit exceeded|quota/i.test(
+      m,
+    )
+  ) {
     return "You hit your free plan limit of 1 spec. Upgrade to generate more.";
   }
   return m;
+}
+
+function isLimitErrorLike(message: string) {
+  return /generation limit exceeded|generation limit reached|daily generation limit|daily generation limit exceeded|free limit reached|LIMIT_EXCEEDED|limit exceeded|quota/i.test(
+    message,
+  );
+}
+
+function buildLimitDescription(role: LimitDialogState["role"], limit: number) {
+  const planLabel = role === "pro" ? "pro" : role === "enterprise" ? "enterprise" : "free";
+  return `You have reached the ${planLabel} plan limit of ${limit} spec${limit === 1 ? "" : "s"}. Upgrade to generate more.`;
+}
+
+function getLimitDialogTitle(role: LimitDialogState["role"]) {
+  if (role === "pro") return "Pro plan limit reached";
+  if (role === "enterprise") return "Enterprise plan limit reached";
+  return "Free plan limit reached";
 }
 
 function deriveProjectTitle(idea: string) {
@@ -97,8 +147,17 @@ function deriveProjectTitle(idea: string) {
   return (title || "Untitled Project").slice(0, 80);
 }
 
-function buildFallbackDesignSystem(projectName: string, idea: string, stack: Stack | null, prd: string, systemDesign: string, architecture: string) {
-  const stackLine = stack ? `${stack.frontend} / ${stack.backend} / ${stack.database}` : "Not specified";
+function buildFallbackDesignSystem(
+  projectName: string,
+  idea: string,
+  stack: Stack | null,
+  prd: string,
+  systemDesign: string,
+  architecture: string,
+) {
+  const stackLine = stack
+    ? `${stack.frontend} / ${stack.backend} / ${stack.database}`
+    : "Not specified";
   return [
     `# ${projectName} Design System`,
     "",
@@ -122,21 +181,46 @@ function buildFallbackDesignSystem(projectName: string, idea: string, stack: Sta
   ].join("\n");
 }
 
-function buildDerivedDocs(projectName: string, idea: string, stack: Stack | null, prd: string, systemDesign: string, architecture: string, designSystem?: string): Partial<Docs> {
+function buildDerivedDocs(
+  projectName: string,
+  idea: string,
+  stack: Stack | null,
+  prd: string,
+  systemDesign: string,
+  architecture: string,
+  designSystem?: string,
+): Partial<Docs> {
   return {
     prd,
     srs: systemDesign,
     architecture,
-    designSystem: designSystem || buildFallbackDesignSystem(projectName, idea, stack, prd, systemDesign, architecture),
+    designSystem:
+      designSystem ||
+      buildFallbackDesignSystem(projectName, idea, stack, prd, systemDesign, architecture),
     apiSpec: `# API Specification\n\n## Summary\n\nAPI contract for ${projectName}.\n\n## Included Routes\n- POST /project\n- POST /generate/prd\n- POST /generate/system-design\n- POST /generate/architecture\n- GET /download/:id\n`,
     readme: `# ${projectName}\n\n## Overview\n\nSpec bundle for ${projectName}.\n\n## Included\n- PRD\n- System Design\n- Architecture\n`,
     folderStructure: {
       root: `${slug(projectName)}/`,
       tree: [
-        { name: "docs", type: "folder", children: [{ name: "PRD.md", type: "file" }, { name: "SRS.md", type: "file" }, { name: "ARCHITECTURE.md", type: "file" }] },
+        {
+          name: "docs",
+          type: "folder",
+          children: [
+            { name: "PRD.md", type: "file" },
+            { name: "SRS.md", type: "file" },
+            { name: "ARCHITECTURE.md", type: "file" },
+          ],
+        },
         { name: "design", type: "folder", children: [{ name: "DESIGN_SYSTEM.md", type: "file" }] },
         { name: "api", type: "folder", children: [{ name: "API_SPEC.md", type: "file" }] },
-        { name: "structure", type: "folder", children: [{ name: "FOLDER_STRUCTURE.md", type: "file" }, { name: "FOLDER_STRUCTURE.json", type: "file" }] },
+        {
+          name: "structure",
+          type: "folder",
+          children: [
+            { name: "FOLDER_STRUCTURE.md", type: "file" },
+            { name: "FOLDER_STRUCTURE.json", type: "file" },
+          ],
+        },
         { name: "README.md", type: "file" },
       ],
     },
@@ -218,13 +302,18 @@ const DOC_FILES = [
   { key: "architecture", name: "ARCHITECTURE.md", folder: "docs", label: "System Architecture" },
   { key: "designSystem", name: "DESIGN_SYSTEM.md", folder: "design", label: "Design System" },
   { key: "apiSpec", name: "API_SPEC.md", folder: "api", label: "API Specification" },
-  { key: "folderStructure", name: "FOLDER_STRUCTURE.json", folder: "structure", label: "Folder Structure" },
+  {
+    key: "folderStructure",
+    name: "FOLDER_STRUCTURE.json",
+    folder: "structure",
+    label: "Folder Structure",
+  },
   { key: "readme", name: "README.md", folder: "", label: "README" },
 ] as const;
 
 function BuildPage() {
-  const { loading: authLoading, user, session } = useAuth();
-  const backendSession = session?.accessToken ? { accessToken: session.accessToken, user } : null;
+  const navigate = useNavigate();
+  const { user, session } = useAuth();
   const [step, setStep] = useState<Step>("idea");
   const [idea, setIdea] = useState("");
   const [specs, setSpecs] = useState("");
@@ -238,34 +327,51 @@ function BuildPage() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<string>("README.md");
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [limitDialog, setLimitDialog] = useState<LimitDialogState | null>(null);
 
   const genQuestions = useServerFn(generateQuestions);
 
+  const openLimitDialog = (state: LimitDialogState) => {
+    setShowAuthDialog(false);
+    setLimitDialog(state);
+    setError(null);
+  };
+
   const submitIdea = async () => {
     if (!idea.trim()) return;
+    if (!session?.accessToken || !user) {
+      setShowAuthDialog(true);
+      setLimitDialog(null);
+      setError(null);
+      return;
+    }
+
+    const backendSession = { accessToken: session.accessToken, user };
     setLoading(true);
     setError(null);
     try {
-      if (backendSession?.accessToken) {
-        const headers = await getAuthHeaders(backendSession);
-        const { response, body } = await requestInsforgeJson<UsageStateResponse>(
-          "/usage",
-          {},
-          headers,
+      const headers = await getAuthHeaders(backendSession);
+      const { response, body } = await requestInsforgeJson<UsageStateResponse>(
+        "/usage",
+        {},
+        headers,
+      );
+
+      if (!response.ok || !body?.success) {
+        throw new Error(
+          body && typeof body === "object" && "error" in body && typeof body.error === "string"
+            ? body.error
+            : `Failed to verify plan usage (${response.status})`,
         );
+      }
 
-        if (!response.ok || !body?.success) {
-          throw new Error(
-            body && typeof body === "object" && "error" in body && typeof body.error === "string"
-              ? body.error
-              : `Failed to verify plan usage (${response.status})`,
-          );
-        }
-
-        if (body.blocked) {
-          setError(`You have reached the free plan limit of ${body.limit} spec${body.limit === 1 ? "" : "s"}. Upgrade to generate more.`);
-          return;
-        }
+      if (body.blocked) {
+        openLimitDialog({
+          role: body.role,
+          description: buildLimitDescription(body.role, body.limit),
+        });
+        return;
       }
 
       const res = await genQuestions({ data: { idea, specs } } as any);
@@ -273,7 +379,19 @@ function BuildPage() {
       setQuestions(res.questions);
       setStep("questions");
     } catch (e: any) {
-      setError(e.message);
+      const message = e instanceof Error ? e.message : String(e);
+      const usage = e?.body?.usage as
+        | { role?: LimitDialogState["role"]; limit?: number }
+        | undefined;
+      if (isLimitErrorLike(message) && usage?.role && typeof usage.limit === "number") {
+        openLimitDialog({
+          role: usage.role,
+          description: e?.body?.message || buildLimitDescription(usage.role, usage.limit),
+        });
+        return;
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -327,7 +445,19 @@ function BuildPage() {
       setStack(body as Stack);
       setStep("stack");
     } catch (e: any) {
-      setError(e.message);
+      const message = e instanceof Error ? e.message : String(e);
+      const usage = e?.body?.usage as
+        | { role?: LimitDialogState["role"]; limit?: number }
+        | undefined;
+      if (isLimitErrorLike(message) && usage?.role && typeof usage.limit === "number") {
+        openLimitDialog({
+          role: usage.role,
+          description: e?.body?.message || buildLimitDescription(usage.role, usage.limit),
+        });
+        return;
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -335,6 +465,9 @@ function BuildPage() {
 
   const startGeneration = async () => {
     if (!stack) return;
+    const sessionOverride = session?.accessToken
+      ? { accessToken: session.accessToken, user }
+      : null;
     setStep("generating");
     setDocs({});
     setSelectedFile("README.md");
@@ -349,9 +482,14 @@ function BuildPage() {
         "/project",
         {
           method: "POST",
-          body: JSON.stringify({ title, idea, description: specs || undefined, stackRecommendation: stack }),
+          body: JSON.stringify({
+            title,
+            idea,
+            description: specs || undefined,
+            stackRecommendation: stack,
+          }),
         },
-        backendSession,
+        sessionOverride,
       );
 
       setProjectName(created.project.title);
@@ -364,7 +502,7 @@ function BuildPage() {
           method: "POST",
           body: JSON.stringify({ projectId: created.project.id }),
         },
-        backendSession,
+        sessionOverride,
       );
 
       setProgress(["Creating project", "Writing PRD", "Writing System Design"]);
@@ -374,17 +512,22 @@ function BuildPage() {
           method: "POST",
           body: JSON.stringify({ projectId: created.project.id }),
         },
-        backendSession,
+        sessionOverride,
       );
 
-      setProgress(["Creating project", "Writing PRD", "Writing System Design", "Writing Architecture"]);
+      setProgress([
+        "Creating project",
+        "Writing PRD",
+        "Writing System Design",
+        "Writing Architecture",
+      ]);
       const architecture = await backendJson<BackendGenerateResponse>(
         "/generate/architecture",
         {
           method: "POST",
           body: JSON.stringify({ projectId: created.project.id }),
         },
-        backendSession,
+        sessionOverride,
       );
 
       const nextDocs = buildDerivedDocs(
@@ -401,13 +544,28 @@ function BuildPage() {
       setProgress((p) => [...p, "Done"]);
       setTimeout(() => setStep("output"), 600);
     } catch (e: any) {
-      setError(formatFrontendErrorMessage(e instanceof Error ? e.message : String(e)));
+      const message = e instanceof Error ? e.message : String(e);
+      const usage = e?.body?.usage as
+        | { role?: LimitDialogState["role"]; limit?: number }
+        | undefined;
+      if (isLimitErrorLike(message) && usage?.role && typeof usage.limit === "number") {
+        openLimitDialog({
+          role: usage.role,
+          description: e?.body?.message || buildLimitDescription(usage.role, usage.limit),
+        });
+        return;
+      }
+
+      setError(formatFrontendErrorMessage(message));
       setStep("stack");
     }
   };
 
   useEffect(() => {
-    if (step !== "output" || !projectId || !docs.folderStructure || !backendSession?.accessToken) {
+    const sessionOverride = session?.accessToken
+      ? { accessToken: session.accessToken, user }
+      : null;
+    if (step !== "output" || !projectId || !docs.folderStructure || !sessionOverride?.accessToken) {
       return;
     }
 
@@ -416,11 +574,11 @@ function BuildPage() {
       {
         method: "POST",
       },
-      backendSession,
+      sessionOverride,
     ).catch(() => {
       // Completion acknowledgement is best-effort and idempotent.
     });
-  }, [step, projectId, docs.folderStructure, backendSession?.accessToken, user?.id]);
+  }, [step, projectId, docs.folderStructure, session?.accessToken, user]);
 
   const downloadZip = async () => {
     const zip = new JSZip();
@@ -439,7 +597,32 @@ function BuildPage() {
   };
 
   const isUnauthorizedError = error?.toLowerCase().includes("unauthorized");
-  const showError = !!error && (!isUnauthorizedError || (!authLoading && !user));
+  const isLimitError = error ? isLimitErrorLike(error) : false;
+  const showError = !!error && !isUnauthorizedError && !isLimitError;
+  const limitUpgradeLabel =
+    limitDialog?.role === "free" ? "Upgrade to Pro" : "Upgrade to Enterprise";
+  const limitUpgradePlan = limitDialog?.role === "free" ? "pro" : "enterprise";
+
+  const handleLimitUpgrade = async () => {
+    if (!limitDialog) return;
+
+    const name =
+      (user?.user_metadata?.full_name as string | undefined) ||
+      (user?.user_metadata?.name as string | undefined) ||
+      user?.email ||
+      undefined;
+
+    setLimitDialog(null);
+    setError(null);
+    try {
+      await openPricingCheckout(limitUpgradePlan, {
+        email: user?.email ?? undefined,
+        name,
+      });
+    } catch {
+      // Keep the modal flow quiet; the checkout page handles its own UX.
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -457,68 +640,140 @@ function BuildPage() {
         <InteractiveGrid />
 
         <div className="relative z-10">
-        {/* Stepper */}
-        {step !== "output" && (
-          <div className="mx-auto max-w-3xl px-6 pt-8">
-            <Stepper current={step} />
-          </div>
-        )}
-
-        {showError && (
-          <div className="mx-auto max-w-3xl px-6 mt-6">
-            <div className="p-4 rounded-xl border border-destructive/40 bg-destructive/10 text-sm">
-              {error}
+          {/* Stepper */}
+          {step !== "output" && (
+            <div className="mx-auto max-w-3xl px-6 pt-8">
+              <Stepper current={step} />
             </div>
-          </div>
-        )}
+          )}
 
-        {step === "idea" && (
-          <IdeaStep
-            idea={idea}
-            setIdea={setIdea}
-            specs={specs}
-            setSpecs={setSpecs}
-            onNext={submitIdea}
-            loading={loading}
-          />
-        )}
+          {showError && (
+            <div className="mx-auto max-w-3xl px-6 mt-6">
+              <div className="p-4 rounded-xl border border-destructive/40 bg-destructive/10 text-sm">
+                {error}
+              </div>
+            </div>
+          )}
 
-        {step === "questions" && (
-          <QuestionsStep
-            projectName={projectName}
-            questions={questions}
-            answers={answers}
-            setAnswers={setAnswers}
-            onBack={() => setStep("idea")}
-            onNext={submitAnswers}
-            loading={loading}
-          />
-        )}
-
-        {step === "stack" && stack && (
-          <StackStep stack={stack} setStack={setStack} onBack={() => setStep("questions")} onNext={startGeneration} />
-        )}
-
-        {step === "generating" && <GeneratingStep progress={progress} />}
-
-        {step === "output" && docs.folderStructure && (
-          <OutputStep
-            projectName={projectName}
-            docs={docs as Docs}
-            selectedFile={selectedFile}
-            setSelectedFile={setSelectedFile}
-            onDownload={downloadZip}
-            onRestart={() => {
-              setStep("idea");
-              setIdea("");
-              setSpecs("");
-              setProjectId(null);
-              setAnswers({});
-              setDocs({});
-              setStack(null);
-            }}
+          {step === "idea" && (
+            <IdeaStep
+              idea={idea}
+              setIdea={setIdea}
+              specs={specs}
+              setSpecs={setSpecs}
+              onNext={submitIdea}
+              loading={loading}
             />
           )}
+
+          {step === "questions" && (
+            <QuestionsStep
+              projectName={projectName}
+              questions={questions}
+              answers={answers}
+              setAnswers={setAnswers}
+              onBack={() => setStep("idea")}
+              onNext={submitAnswers}
+              loading={loading}
+            />
+          )}
+
+          {step === "stack" && stack && (
+            <StackStep
+              stack={stack}
+              setStack={setStack}
+              onBack={() => setStep("questions")}
+              onNext={startGeneration}
+            />
+          )}
+
+          {step === "generating" && <GeneratingStep progress={progress} />}
+
+          {step === "output" && docs.folderStructure && (
+            <OutputStep
+              projectName={projectName}
+              docs={docs as Docs}
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+              onDownload={downloadZip}
+              onRestart={() => {
+                setStep("idea");
+                setIdea("");
+                setSpecs("");
+                setProjectId(null);
+                setAnswers({});
+                setDocs({});
+                setStack(null);
+              }}
+            />
+          )}
+
+          <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader className="text-left">
+                <DialogTitle className="font-display text-2xl">Login to continue</DialogTitle>
+                <DialogDescription className="text-base">
+                  Sign in or create an account to generate your project specification.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-start">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAuthDialog(false);
+                    navigate({ to: "/welcome", search: { mode: "login" } });
+                  }}
+                  className="btn-3d btn-3d-outline w-full sm:w-auto"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAuthDialog(false);
+                    navigate({ to: "/welcome", search: { mode: "signup" } });
+                  }}
+                  className="btn-3d w-full sm:w-auto"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={!!limitDialog} onOpenChange={(open) => !open && setLimitDialog(null)}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader className="text-left">
+                <DialogTitle className="font-display text-2xl">
+                  {limitDialog ? getLimitDialogTitle(limitDialog.role) : "Plan limit reached"}
+                </DialogTitle>
+                <DialogDescription className="text-base">
+                  {limitDialog?.description}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap sm:justify-start">
+                <button
+                  type="button"
+                  onClick={handleLimitUpgrade}
+                  className="btn-3d btn-3d-outline w-full sm:w-auto"
+                >
+                  {limitUpgradeLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLimitDialog(null);
+                    navigate({ to: "/pricing" });
+                  }}
+                  className="btn-3d w-full sm:w-auto"
+                >
+                  View All Plans
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </main>
     </div>
@@ -526,7 +781,12 @@ function BuildPage() {
 }
 
 function slug(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "project";
+  return (
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "project"
+  );
 }
 
 function Stepper({ current }: { current: Step }) {
@@ -558,7 +818,9 @@ function Stepper({ current }: { current: Step }) {
             </div>
             <span className="text-sm font-medium hidden sm:inline">{s.label}</span>
           </div>
-          {i < steps.length - 1 && <div className={`flex-1 h-px ${i < currentIdx ? "bg-primary" : "bg-border"}`} />}
+          {i < steps.length - 1 && (
+            <div className={`flex-1 h-px ${i < currentIdx ? "bg-primary" : "bg-border"}`} />
+          )}
         </div>
       ))}
     </div>
@@ -569,13 +831,19 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
   return (
     <section className="mx-auto max-w-3xl px-6 py-16 animate-fade-up">
       <div className="text-center mb-10">
-        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">What are you building?</h1>
-        <p className="mt-4 text-muted-foreground">Drop a sentence or a paragraph. The vaguer the better - we'll ask the rest.</p>
+        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
+          What are you building?
+        </h1>
+        <p className="mt-4 text-muted-foreground">
+          Drop a sentence or a paragraph. The vaguer the better - we'll ask the rest.
+        </p>
       </div>
 
       <div className="space-y-4">
         <div>
-          <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2 block">Your idea</label>
+          <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2 block">
+            Your idea
+          </label>
           <textarea
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
@@ -620,7 +888,15 @@ function IdeaStep({ idea, setIdea, specs, setSpecs, onNext, loading }: any) {
   );
 }
 
-function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, onNext, loading }: any) {
+function QuestionsStep({
+  projectName,
+  questions,
+  answers,
+  setAnswers,
+  onBack,
+  onNext,
+  loading,
+}: any) {
   const [idx, setIdx] = useState(0);
   const total = questions.length;
   const q: Question | undefined = questions[idx];
@@ -660,9 +936,13 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
   return (
     <section className="mx-auto max-w-2xl px-6 py-12 animate-fade-up">
       <div className="mb-6">
-        <div className="text-xs font-mono uppercase tracking-wider text-primary mb-2">Project · {projectName}</div>
+        <div className="text-xs font-mono uppercase tracking-wider text-primary mb-2">
+          Project · {projectName}
+        </div>
         <div className="flex items-center justify-between gap-4">
-          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight">A few clarifying questions</h1>
+          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight">
+            A few clarifying questions
+          </h1>
           <span className="font-mono text-sm text-muted-foreground shrink-0">
             {String(idx + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
           </span>
@@ -678,7 +958,10 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
       </div>
 
       {/* Single question card — replaces on change with fade-up */}
-      <div key={q.id} className="p-6 rounded-2xl border border-border bg-surface/60 animate-fade-up">
+      <div
+        key={q.id}
+        className="p-6 rounded-2xl border border-border bg-surface/60 animate-fade-up"
+      >
         <label className="block font-medium text-lg mb-5">{q.question}</label>
 
         <div className="grid gap-2.5 sm:grid-cols-2">
@@ -701,7 +984,9 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
                       selected ? "border-primary bg-primary" : "border-border"
                     }`}
                   >
-                    {selected && <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />}
+                    {selected && (
+                      <Check className="w-2.5 h-2.5 text-primary-foreground" strokeWidth={3} />
+                    )}
                   </span>
                   {opt}
                 </span>
@@ -742,11 +1027,17 @@ function QuestionsStep({ projectName, questions, answers, setAnswers, onBack, on
           className="btn-3d flex-1"
         >
           {loading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Recommending stack...</>
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" /> Recommending stack...
+            </>
           ) : isLast ? (
-            <>Next: Pick stack <ArrowRight className="w-4 h-4" /></>
+            <>
+              Next: Pick stack <ArrowRight className="w-4 h-4" />
+            </>
           ) : (
-            <>Next question <ArrowRight className="w-4 h-4" /></>
+            <>
+              Next question <ArrowRight className="w-4 h-4" />
+            </>
           )}
         </button>
       </div>
@@ -766,8 +1057,12 @@ function StackStep({ stack, setStack, onBack, onNext }: any) {
   return (
     <section className="mx-auto max-w-3xl px-6 py-12 animate-fade-up">
       <div className="mb-8">
-        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">Recommended stack</h1>
-        <p className="mt-3 text-muted-foreground">Override anything you want — these are just suggestions.</p>
+        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">
+          Recommended stack
+        </h1>
+        <p className="mt-3 text-muted-foreground">
+          Override anything you want — these are just suggestions.
+        </p>
       </div>
 
       <div className="p-5 rounded-xl border border-primary/30 bg-accent mb-6">
@@ -779,8 +1074,13 @@ function StackStep({ stack, setStack, onBack, onNext }: any) {
 
       <div className="space-y-3">
         {fields.map((f) => (
-          <div key={f.key} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-surface/50">
-            <div className="w-32 text-sm text-muted-foreground font-mono uppercase tracking-wider text-xs">{f.label}</div>
+          <div
+            key={f.key}
+            className="flex items-center gap-4 p-4 rounded-xl border border-border bg-surface/50"
+          >
+            <div className="w-32 text-sm text-muted-foreground font-mono uppercase tracking-wider text-xs">
+              {f.label}
+            </div>
             <input
               value={stack[f.key]}
               onChange={(e) => setStack({ ...stack, [f.key]: e.target.value })}
@@ -794,11 +1094,7 @@ function StackStep({ stack, setStack, onBack, onNext }: any) {
         <button onClick={onBack} className="btn-3d btn-3d-outline">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button
-          type="button"
-          onClick={onNext}
-          className="btn-3d flex-1"
-        >
+        <button type="button" onClick={onNext} className="btn-3d flex-1">
           Generate documentation <ArrowRight className="w-4 h-4" />
         </button>
       </div>
@@ -813,7 +1109,9 @@ function GeneratingStep({ progress }: { progress: string[] }) {
         <div className="inline-flex w-16 h-16 rounded-2xl bg-primary items-center justify-center mb-6 animate-pulse-glow">
           <Sparkles className="w-7 h-7 text-primary-foreground" />
         </div>
-        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">Generating your spec</h1>
+        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight">
+          Generating your spec
+        </h1>
         <p className="mt-3 text-muted-foreground">This usually takes 30–60 seconds.</p>
       </div>
 
@@ -830,7 +1128,10 @@ function GeneratingStep({ progress }: { progress: string[] }) {
               ) : (
                 <Check className="w-4 h-4 text-primary" />
               )}
-              <span className={isLast ? "text-foreground" : "text-muted-foreground"}>{p}{isLast && "..."}</span>
+              <span className={isLast ? "text-foreground" : "text-muted-foreground"}>
+                {p}
+                {isLast && "..."}
+              </span>
             </div>
           );
         })}
@@ -839,7 +1140,14 @@ function GeneratingStep({ progress }: { progress: string[] }) {
   );
 }
 
-function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownload, onRestart }: any) {
+function OutputStep({
+  projectName,
+  docs,
+  selectedFile,
+  setSelectedFile,
+  onDownload,
+  onRestart,
+}: any) {
   // Build virtual tree
   const virtualTree: TreeNode[] = [
     {
@@ -883,20 +1191,16 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
     <section className="mx-auto max-w-7xl px-6 py-8 animate-fade-up">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="text-xs font-mono uppercase tracking-wider text-primary mb-1">Generated · 7 files</div>
+          <div className="text-xs font-mono uppercase tracking-wider text-primary mb-1">
+            Generated · 7 files
+          </div>
           <h1 className="font-display text-3xl font-bold tracking-tight">{projectName}</h1>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={onRestart}
-            className="btn-3d btn-3d-sm btn-3d-outline"
-          >
+          <button onClick={onRestart} className="btn-3d btn-3d-sm btn-3d-outline">
             <RefreshCw className="w-4 h-4" /> New project
           </button>
-          <button
-            onClick={onDownload}
-            className="btn-3d btn-3d-sm"
-          >
+          <button onClick={onDownload} className="btn-3d btn-3d-sm">
             <Download className="w-4 h-4" /> Download ZIP
           </button>
         </div>
@@ -934,5 +1238,3 @@ function OutputStep({ projectName, docs, selectedFile, setSelectedFile, onDownlo
     </section>
   );
 }
-
-

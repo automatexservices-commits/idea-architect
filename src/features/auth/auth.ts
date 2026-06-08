@@ -17,6 +17,52 @@ function isBrowser() {
   return typeof window !== "undefined";
 }
 
+function describeError(error: unknown) {
+  if (!error) return null;
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      statusCode: (error as { statusCode?: unknown }).statusCode ?? null,
+      code: (error as { code?: unknown }).code ?? null,
+    };
+  }
+  if (typeof error === "object") {
+    return error;
+  }
+  return String(error);
+}
+
+function getJwtExpiry(token: string | null) {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded));
+    if (typeof payload?.exp === "number") {
+      return {
+        exp: payload.exp,
+        expiresAtIso: new Date(payload.exp * 1000).toISOString(),
+        expired: Date.now() >= payload.exp * 1000,
+      };
+    }
+  } catch {}
+  return null;
+}
+
+function getAuthCookieDiagnostics() {
+  if (!isBrowser()) return null;
+  const csrfCookiePresent = document.cookie.includes("insforge_csrf_token=");
+  return {
+    csrfCookiePresent,
+    refreshCookieReadable: false,
+    refreshCookieNote: "InsForge refresh cookie is httpOnly and cannot be read from JavaScript.",
+  };
+}
+
 function getAppUrl() {
   if (isBrowser() && window.location.origin) return window.location.origin.replace(/\/+$/, "");
   const configured = import.meta.env.VITE_APP_URL?.trim();
@@ -231,6 +277,12 @@ export async function signOut() {
 export async function getSession() {
   try {
     const storedToken = readStoredValue(ACCESS_TOKEN_KEY);
+    console.info("[auth] getSession start", {
+      hasStoredToken: Boolean(storedToken),
+      hasStoredUser: Boolean(readStoredUser()),
+      tokenExpiry: getJwtExpiry(storedToken),
+      cookies: getAuthCookieDiagnostics(),
+    });
     if (storedToken) {
       insforge.getHttpClient().setAuthToken(storedToken);
     }
@@ -238,11 +290,18 @@ export async function getSession() {
     let currentUser = null as Awaited<ReturnType<typeof getCurrentUser>>;
     try {
       const { data, error } = await insforge.auth.getCurrentUser();
+      console.info("[auth] getCurrentUser result", {
+        data: data ? { hasUser: Boolean(data.user) } : null,
+        error: describeError(error),
+      });
       if (error) {
         console.error('Session error:', error);
       }
       currentUser = data?.user ?? null;
     } catch (error) {
+      console.info("[auth] getCurrentUser threw", {
+        error: describeError(error),
+      });
       console.error('Session error:', error);
     }
 
@@ -250,6 +309,12 @@ export async function getSession() {
     const storedUser = readStoredUser();
 
     if ((!accessToken || !currentUser) && storedToken) {
+      console.info("[auth] getSession attempting refresh", {
+        hasAccessToken: Boolean(accessToken),
+        hasCurrentUser: Boolean(currentUser),
+        tokenExpiry: getJwtExpiry(accessToken),
+        cookies: getAuthCookieDiagnostics(),
+      });
       const refreshed = await refreshSessionToken().catch(() => null);
       if (isUsableSession(refreshed)) {
         return refreshed as AppSession;
@@ -289,7 +354,23 @@ export async function getSession() {
 
 export async function refreshSessionToken() {
   try {
+    console.info("[auth] refreshSession start", {
+      tokenExpiry: getJwtExpiry(readAccessToken()),
+      cookies: getAuthCookieDiagnostics(),
+    });
     const { data, error } = await insforge.auth.refreshSession();
+
+    console.info("[auth] refreshSession result", {
+      data: data
+        ? {
+            hasAccessToken: Boolean(data.accessToken),
+            hasUser: Boolean(data.user),
+            hasRefreshToken: Boolean((data as { refreshToken?: unknown }).refreshToken),
+            keys: Object.keys(data as Record<string, unknown>),
+          }
+        : null,
+      error: describeError(error),
+    });
 
     if (error || !data?.accessToken || !data?.user) {
       return null;
@@ -308,7 +389,16 @@ export async function refreshSessionToken() {
  */
 export async function getCurrentUser() {
   try {
+    console.info("[auth] getCurrentUser helper start", {
+      tokenExpiry: getJwtExpiry(readAccessToken()),
+      cookies: getAuthCookieDiagnostics(),
+    });
     const { data, error } = await insforge.auth.getCurrentUser();
+
+    console.info("[auth] getCurrentUser helper result", {
+      data: data ? { hasUser: Boolean(data.user) } : null,
+      error: describeError(error),
+    });
 
     if (error) {
       console.error('Get user error:', error);

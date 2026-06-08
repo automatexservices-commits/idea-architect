@@ -49,6 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const silent = options?.silent ?? false;
     const previousSession = sessionRef.current;
     try {
+      console.info("[auth] refreshAuth start", {
+        silent,
+        previousHasSession: Boolean(previousSession?.accessToken),
+      });
       // Keep the app mounted during background auth refreshes.
       // We still refresh the auth session on focus/visibility, but we avoid
       // flipping the global loading gate unless this is the initial load.
@@ -62,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // when our localStorage cache is empty after a refresh or port change.
       let nextSession = await getSession();
       if (!nextSession?.accessToken) {
+        console.info("[auth] refreshAuth initial session missing", {
+          silent,
+        });
         await sleep(250);
         nextSession = await getSession();
       }
@@ -72,11 +79,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return previousSession;
       }
 
+      console.info("[auth] refreshAuth resolved", {
+        silent,
+        hasSession: Boolean(nextSession?.accessToken),
+        hasUser: Boolean(nextSession?.user),
+      });
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       return nextSession;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to load auth state";
+      console.info("[auth] refreshAuth error", {
+        silent,
+        message,
+      });
       if (!silent) {
         setError(message);
         setSession(null);

@@ -1,0 +1,29 @@
+# PLANNR
+
+PLANNR is a software specification generator and startup planning tool for vibe coding workflows.
+
+## Primary Pages
+
+- https://plannr.in/
+- https://plannr.in/pricing
+- https://plannr.in/examples
+- https://plannr.in/docs
+
+## What PLANNR Does
+
+- Turns rough ideas into PRDs, software specs, architecture docs, and API specifications.
+- Helps founders and product teams move from prompt to plan faster.
+- Supports startup planning, AI product management, and software architecture discovery.
+
+## Audience
+
+- Founders
+- Product managers
+- Indie hackers
+- Startup teams
+- Developers using vibe coding workflows
+
+## Best Entry Points
+
+- Start here if you want to build immediately: https://plannr.in/build
+- Start here if you want examples: https://plannr.in/examples

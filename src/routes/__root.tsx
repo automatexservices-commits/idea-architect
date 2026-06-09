@@ -6,6 +6,7 @@ import plannrFavicon from "@/assets/plannr-logo.png";
 import { InteractiveGrid } from "@/components/InteractiveGrid";
 import { SplashIntro } from "@/components/SplashIntro";
 import { AuthProvider, useAuth } from "@/features/auth";
+import { getCanonicalUrl, organizationSchema, softwareApplicationSchema } from "@/lib/seo";
 
 /**
  * Gate: on first session visit, redirect "/" -> "/welcome" so the user
@@ -82,10 +83,28 @@ export const Route = createRootRoute({
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  const canonical = getCanonicalUrl(pathname);
+  const isPrivateRoute =
+    pathname === "/build" ||
+    pathname === "/billing" ||
+    pathname === "/profile" ||
+    pathname === "/welcome" ||
+    pathname.startsWith("/auth/");
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
+        <link rel="canonical" href={canonical} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:site_name" content="PLANNR" />
+        <meta name="twitter:site" content="@plannrdev" />
+        {isPrivateRoute ? (
+          <meta name="robots" content="noindex, nofollow, noarchive" />
+        ) : null}
+        <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(softwareApplicationSchema)}</script>
       </head>
       <body>
         {children}

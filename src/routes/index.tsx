@@ -13,10 +13,24 @@ import exHealth from "@/assets/ex-health.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "PLANNR | Plan Smarter, Get More Done" },
-      { name: "description", content: "PLANNR helps students and young professionals organize tasks, deadlines, and goals in one clean planning workspace." },
-      { property: "og:title", content: "PLANNR | Plan Smarter, Get More Done" },
-      { property: "og:description", content: "PLANNR helps students and young professionals organize tasks, deadlines, and goals in one clean planning workspace." },
+      { title: "PLANNR | AI PRD generator for vibe coding and startup planning" },
+      {
+        name: "description",
+        content:
+          "PLANNR is an AI PRD generator, software specification generator, and startup planning tool that turns vibe coding ideas into product docs, architecture, and API specs.",
+      },
+      { property: "og:title", content: "PLANNR | AI PRD generator for vibe coding and startup planning" },
+      {
+        property: "og:description",
+        content:
+          "Turn a one-line idea into a PRD, software spec, architecture, and product plan with PLANNR.",
+      },
+      { name: "twitter:title", content: "PLANNR | AI PRD generator for vibe coding and startup planning" },
+      {
+        name: "twitter:description",
+        content:
+          "Turn a one-line idea into a PRD, software spec, architecture, and product plan with PLANNR.",
+      },
     ],
   }),
   component: LandingPage,

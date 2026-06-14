@@ -1,31 +1,23 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, useNavigate, useLocation } from "@tanstack/react-router";
-import { useEffect } from "react";
+import {
+  Outlet,
+  Link,
+  createRootRoute,
+  HeadContent,
+  Scripts,
+  useLocation,
+} from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import plannrFavicon from "@/assets/plannr-logo.png";
+import plannrFavicon from "@/assets/plannr-favicon.png";
 import { InteractiveGrid } from "@/components/InteractiveGrid";
 import { SplashIntro } from "@/components/SplashIntro";
 import { AuthProvider, useAuth } from "@/features/auth";
-import { getCanonicalUrl, organizationSchema, softwareApplicationSchema } from "@/lib/seo";
-
-/**
- * Gate: on first session visit, redirect "/" -> "/welcome" so the user
- * sees the login / explore-now choice before entering the site.
- */
-function WelcomeGate() {
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (pathname !== "/") return;
-    try {
-      if (!sessionStorage.getItem("plannr-entered")) {
-        navigate({ to: "/welcome", replace: true });
-      }
-    } catch {}
-  }, [pathname, navigate]);
-  return null;
-}
+import {
+  getCanonicalUrl,
+  getRobotsContent,
+  organizationSchema,
+  softwareApplicationSchema,
+} from "@/lib/seo";
 
 function NotFoundComponent() {
   return (
@@ -55,20 +47,40 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "PLANNR — From idea to production-ready spec" },
-      { name: "description", content: "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes." },
+      {
+        name: "description",
+        content:
+          "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:title", content: "PLANNR — From idea to production-ready spec" },
       { name: "twitter:title", content: "PLANNR — From idea to production-ready spec" },
-      { property: "og:description", content: "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes." },
-      { name: "twitter:description", content: "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3376e456-7d36-452e-97ca-7205f77bafa5/id-preview-5a036a14--ad20b996-2401-4e85-8968-55b0d919e141.lovable.app-1777460823725.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3376e456-7d36-452e-97ca-7205f77bafa5/id-preview-5a036a14--ad20b996-2401-4e85-8968-55b0d919e141.lovable.app-1777460823725.png" },
+      {
+        property: "og:description",
+        content:
+          "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes.",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Turn vague app ideas into PRDs, architecture, API specs, and design systems. AI-powered project specs in minutes.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3376e456-7d36-452e-97ca-7205f77bafa5/id-preview-5a036a14--ad20b996-2401-4e85-8968-55b0d919e141.lovable.app-1777460823725.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3376e456-7d36-452e-97ca-7205f77bafa5/id-preview-5a036a14--ad20b996-2401-4e85-8968-55b0d919e141.lovable.app-1777460823725.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-        { rel: "icon", href: plannrFavicon },
-        { rel: "apple-touch-icon", href: plannrFavicon },
+      { rel: "icon", href: plannrFavicon },
+      { rel: "apple-touch-icon", href: plannrFavicon },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -85,12 +97,6 @@ export const Route = createRootRoute({
 function RootShell({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const canonical = getCanonicalUrl(pathname);
-  const isPrivateRoute =
-    pathname === "/build" ||
-    pathname === "/billing" ||
-    pathname === "/profile" ||
-    pathname === "/welcome" ||
-    pathname.startsWith("/auth/");
 
   return (
     <html lang="en">
@@ -100,9 +106,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
         <meta property="og:url" content={canonical} />
         <meta property="og:site_name" content="PLANNR" />
         <meta name="twitter:site" content="@plannrdev" />
-        {isPrivateRoute ? (
-          <meta name="robots" content="noindex, nofollow, noarchive" />
-        ) : null}
+        <meta name="robots" content={getRobotsContent(pathname)} />
         <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(softwareApplicationSchema)}</script>
       </head>
@@ -133,7 +137,6 @@ function RootComponent() {
     <AuthProvider>
       <AuthGate>
         {showIntroChrome ? <SplashIntro /> : null}
-        <WelcomeGate />
         {showInteractiveGrid ? <InteractiveGrid /> : null}
         <div className="relative z-10">
           <Outlet />

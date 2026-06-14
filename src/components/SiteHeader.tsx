@@ -58,8 +58,7 @@ export function SiteHeader() {
               <img
                 src={plannrLogo}
                 alt="PLANNR"
-                className="h-full w-full object-contain rounded-full"
-                style={showMarkOnly ? { transform: "translateY(-12%) scale(1.18)" } : undefined}
+                className="block h-full w-full rounded-full object-contain object-center"
               />
             </span>
             <span className="hidden sm:flex flex-col leading-tight min-w-0">

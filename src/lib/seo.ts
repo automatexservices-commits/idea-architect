@@ -1,7 +1,20 @@
 const FALLBACK_SITE_URL = "https://plannr.in";
-const SITE_URL = (import.meta.env.VITE_APP_URL || import.meta.env.VITE_SITE_URL || FALLBACK_SITE_URL).replace(/\/+$/, "");
+const SITE_URL = (
+  import.meta.env.VITE_APP_URL ||
+  import.meta.env.VITE_SITE_URL ||
+  FALLBACK_SITE_URL
+).replace(/\/+$/, "");
 const DEFAULT_OG_IMAGE =
   "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3376e456-7d36-452e-97ca-7205f77bafa5/id-preview-5a036a14--ad20b996-2401-4e85-8968-55b0d919e141.lovable.app-1777460823725.png";
+const PRIVATE_ROUTE_PREFIXES = [
+  "/welcome",
+  "/build",
+  "/billing",
+  "/profile",
+  "/account",
+  "/dashboard",
+  "/auth/",
+];
 
 export function getSiteUrl() {
   return SITE_URL;
@@ -10,6 +23,17 @@ export function getSiteUrl() {
 export function getCanonicalUrl(pathname = "/") {
   const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
   return `${SITE_URL}${normalizedPath === "/" ? "/" : normalizedPath}`;
+}
+
+export function isPrivateRoutePath(pathname = "/") {
+  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return PRIVATE_ROUTE_PREFIXES.some((prefix) =>
+    prefix.endsWith("/") ? normalizedPath.startsWith(prefix) : normalizedPath === prefix,
+  );
+}
+
+export function getRobotsContent(pathname = "/") {
+  return isPrivateRoutePath(pathname) ? "noindex, nofollow, noarchive" : "index, follow";
 }
 
 export function buildSeoHead({
@@ -37,7 +61,10 @@ export function buildSeoHead({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title },
       { name: "description", content: description },
-      { name: "robots", content: noindex ? "noindex, nofollow, noarchive" : "index, follow, max-image-preview:large" },
+      {
+        name: "robots",
+        content: noindex ? "noindex, nofollow, noarchive" : getRobotsContent(pathname),
+      },
       { property: "og:type", content: type },
       { property: "og:site_name", content: "PLANNR" },
       { property: "og:title", content: title },
@@ -61,7 +88,8 @@ export const organizationSchema = {
   name: "PLANNR",
   url: getSiteUrl(),
   logo: `${getSiteUrl()}/assets/plannr-logo.png`,
-  description: "PLANNR helps founders and teams turn ideas into PRDs, architecture, and software specifications.",
+  description:
+    "PLANNR helps founders and teams turn ideas into PRDs, architecture, and software specifications.",
   sameAs: ["https://instagram.com/plannr.dev"],
 };
 

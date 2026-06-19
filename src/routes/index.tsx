@@ -13,23 +13,23 @@ import exHealth from "@/assets/ex-health.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "PLANNR | AI PRD generator for vibe coding and startup planning" },
+      { title: "PLANNR | AI PRD, SRS & Software Specification Generator for Vibe Coding" },
       {
         name: "description",
         content:
-          "PLANNR is an AI PRD generator, software specification generator, and startup planning tool that turns vibe coding ideas into product docs, architecture, and API specs.",
+          "Turn any idea into complete product documentation with AI. Generate PRDs, SRS documents, software specifications, architecture plans, API documentation, folder structures, and development blueprints for vibe coding and startup projects.",
       },
-      { property: "og:title", content: "PLANNR | AI PRD generator for vibe coding and startup planning" },
+      { property: "og:title", content: "PLANNR | AI PRD, SRS & Software Specification Generator for Vibe Coding" },
       {
         property: "og:description",
         content:
-          "Turn a one-line idea into a PRD, software spec, architecture, and product plan with PLANNR.",
+          "Turn any idea into complete product documentation with AI. Generate PRDs, SRS documents, software specifications, architecture plans, API documentation, folder structures, and development blueprints for vibe coding and startup projects.",
       },
-      { name: "twitter:title", content: "PLANNR | AI PRD generator for vibe coding and startup planning" },
+      { name: "twitter:title", content: "PLANNR | AI PRD, SRS & Software Specification Generator for Vibe Coding" },
       {
         name: "twitter:description",
         content:
-          "Turn a one-line idea into a PRD, software spec, architecture, and product plan with PLANNR.",
+          "Turn any idea into complete product documentation with AI. Generate PRDs, SRS documents, software specifications, architecture plans, API documentation, folder structures, and development blueprints for vibe coding and startup projects.",
       },
     ],
   }),

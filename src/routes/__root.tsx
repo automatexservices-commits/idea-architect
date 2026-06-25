@@ -8,7 +8,6 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import plannrFavicon from "@/assets/plannr-favicon.png";
 import { InteractiveGrid } from "@/components/InteractiveGrid";
 import { SplashIntro } from "@/components/SplashIntro";
 import { AuthProvider, useAuth } from "@/features/auth";
@@ -79,9 +78,7 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.png" },
-      { rel: "icon", href: plannrFavicon },
-      { rel: "apple-touch-icon", href: plannrFavicon },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

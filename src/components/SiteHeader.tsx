@@ -1,9 +1,15 @@
 import { Link, useRouter, useLocation } from "@tanstack/react-router";
-import { ArrowLeft, Menu } from "lucide-react";
+import { ArrowLeft, ChevronDown, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import plannrLogo from "@/assets/plannr-logo.png";
 import { MobileProfileMenuSection, ProfileMenu } from "@/components/ProfileMenu";
 import { useAuth } from "@/features/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -80,6 +86,64 @@ export function SiteHeader() {
             <Link to="/examples" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>
               Examples
             </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground data-[state=open]:text-foreground"
+                >
+                  Product
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" sideOffset={10} className="w-52">
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/prd-generator"
+                    className="w-full cursor-pointer text-muted-foreground hover:text-foreground"
+                    activeProps={{ className: "text-foreground" }}
+                  >
+                    PRD Generator
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/srs-generator"
+                    className="w-full cursor-pointer text-muted-foreground hover:text-foreground"
+                    activeProps={{ className: "text-foreground" }}
+                  >
+                    SRS Generator
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/api-documentation-generator"
+                    className="w-full cursor-pointer text-muted-foreground hover:text-foreground"
+                    activeProps={{ className: "text-foreground" }}
+                  >
+                    API Documentation Generator
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/software-architecture-generator"
+                    className="w-full cursor-pointer text-muted-foreground hover:text-foreground"
+                    activeProps={{ className: "text-foreground" }}
+                  >
+                    Architecture Document Generator
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/design-document-generator"
+                    className="w-full cursor-pointer text-muted-foreground hover:text-foreground"
+                    activeProps={{ className: "text-foreground" }}
+                  >
+                    Design Document Generator
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link to="/pricing" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground" }}>
               Pricing
             </Link>
@@ -131,6 +195,46 @@ export function SiteHeader() {
                   >
                     Examples
                   </Link>
+                  <div className="rounded-xl border border-border/60 bg-background/60 px-3 py-3">
+                    <div className="text-sm font-medium text-muted-foreground">Product</div>
+                    <div className="mt-2 flex flex-col gap-1 pl-2">
+                      <Link
+                        to="/prd-generator"
+                        onClick={closeMobileMenu}
+                        className="rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
+                      >
+                        PRD Generator
+                      </Link>
+                      <Link
+                        to="/srs-generator"
+                        onClick={closeMobileMenu}
+                        className="rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
+                      >
+                        SRS Generator
+                      </Link>
+                      <Link
+                        to="/api-documentation-generator"
+                        onClick={closeMobileMenu}
+                        className="rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
+                      >
+                        API Documentation Generator
+                      </Link>
+                      <Link
+                        to="/software-architecture-generator"
+                        onClick={closeMobileMenu}
+                        className="rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
+                      >
+                        Architecture Document Generator
+                      </Link>
+                      <Link
+                        to="/design-document-generator"
+                        onClick={closeMobileMenu}
+                        className="rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-surface hover:text-foreground transition-colors"
+                      >
+                        Design Document Generator
+                      </Link>
+                    </div>
+                  </div>
                   <Link
                     to="/pricing"
                     onClick={closeMobileMenu}

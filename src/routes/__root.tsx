@@ -6,6 +6,7 @@ import {
   Scripts,
   useLocation,
 } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import appCss from "../styles.css?url";
 import { InteractiveGrid } from "@/components/InteractiveGrid";
@@ -132,9 +133,41 @@ function RootComponent() {
     pathname === "/cookies" ||
     pathname === "/contact" ||
     pathname === "/refund";
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const updateProgress = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setScrollProgress(progress);
+    };
+
+    updateProgress();
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", updateProgress);
+
+    return () => {
+      window.removeEventListener("scroll", updateProgress);
+      window.removeEventListener("resize", updateProgress);
+    };
+  }, []);
 
   return (
     <AuthProvider>
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          height: "2px",
+          width: `${scrollProgress}%`,
+          background: "linear-gradient(90deg, #16a34a, #22c55e, #4ade80)",
+          zIndex: 9999,
+          transition: "width 0.05s linear",
+          pointerEvents: "none",
+        }}
+      />
       <AuthGate>
         {showIntroChrome ? <SplashIntro /> : null}
         {showInteractiveGrid ? <InteractiveGrid /> : null}

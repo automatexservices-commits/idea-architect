@@ -19,13 +19,19 @@ export const Route = createFileRoute("/")({
         content:
           "Turn any idea into complete product documentation with AI. Generate PRDs, SRS documents, software specifications, architecture plans, API documentation, folder structures, and development blueprints for vibe coding and startup projects.",
       },
-      { property: "og:title", content: "PLANNR | AI PRD, SRS & Software Specification Generator for Vibe Coding" },
+      {
+        property: "og:title",
+        content: "PLANNR | AI PRD, SRS & Software Specification Generator for Vibe Coding",
+      },
       {
         property: "og:description",
         content:
           "Turn any idea into complete product documentation with AI. Generate PRDs, SRS documents, software specifications, architecture plans, API documentation, folder structures, and development blueprints for vibe coding and startup projects.",
       },
-      { name: "twitter:title", content: "PLANNR | AI PRD, SRS & Software Specification Generator for Vibe Coding" },
+      {
+        name: "twitter:title",
+        content: "PLANNR | AI PRD, SRS & Software Specification Generator for Vibe Coding",
+      },
       {
         name: "twitter:description",
         content:
@@ -52,31 +58,44 @@ function LandingPage() {
             AI Product Thinking System
           </div>
 
-          <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] animate-fade-up" style={{ animationDelay: "0.1s" }}>
+          <h1
+            className="font-display text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] animate-fade-up"
+            style={{ animationDelay: "0.1s" }}
+          >
             From <span className="gradient-text">vibe</span> to
             <br />
             <span className="text-glow">production spec.</span>
           </h1>
 
-          <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-up" style={{ animationDelay: "0.2s" }}>
-            PLANNR turns a one-line idea into a complete project package — PRD, architecture, API spec, design system, and folder structure. Ready to build.
+          <p
+            className="mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-up"
+            style={{ animationDelay: "0.2s" }}
+          >
+            PLANNR turns a one-line idea into a complete project package — PRD, architecture, API
+            spec, design system, and folder structure. Ready to build.
           </p>
 
-          <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-up" style={{ animationDelay: "0.3s" }}>
-            <Link
-              to="/build"
-              className="btn-3d group"
-            >
+          <div
+            className="mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-up"
+            style={{ animationDelay: "0.3s" }}
+          >
+            <Link to="/build" className="btn-3d group">
               Start Building Free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <a href="#how" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a
+              href="#how"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               See how it works →
             </a>
           </div>
 
           {/* Mock terminal preview */}
-          <div className="mt-20 mx-auto max-w-4xl animate-fade-up" style={{ animationDelay: "0.4s" }}>
+          <div
+            className="mt-20 mx-auto max-w-4xl animate-fade-up"
+            style={{ animationDelay: "0.4s" }}
+          >
             <div className="rounded-2xl border border-border bg-surface/80 backdrop-blur-xl shadow-elevated overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface">
                 <div className="flex gap-1.5">
@@ -84,7 +103,9 @@ function LandingPage() {
                   <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
                   <div className="w-3 h-3 rounded-full bg-primary/60" />
                 </div>
-                <div className="flex-1 text-center text-xs font-mono text-muted-foreground">~/specai/my-saas</div>
+                <div className="flex-1 text-center text-xs font-mono text-muted-foreground">
+                  ~/specai/my-saas
+                </div>
               </div>
               <div className="p-6 font-mono text-sm text-left grid md:grid-cols-2 gap-6">
                 <div className="space-y-1">
@@ -136,7 +157,10 @@ function LandingPage() {
                 Browse a slice of what PLANNR can generate, from dating apps to fintech wallets.
               </p>
             </div>
-            <Link to="/examples" className="btn-3d btn-3d-outline btn-3d-sm whitespace-nowrap self-start md:self-auto">
+            <Link
+              to="/examples"
+              className="btn-3d btn-3d-outline btn-3d-sm whitespace-nowrap self-start md:self-auto"
+            >
               See all examples
               <ArrowRight className="w-4 h-4" />
             </Link>
@@ -145,12 +169,12 @@ function LandingPage() {
 
         {(() => {
           const PREVIEWS = [
-            { tag: "Dating",     title: "Lumr",     image: exDating },
-            { tag: "Delivery",   title: "ZipEats",  image: exDelivery },
-            { tag: "SaaS",       title: "Metricly", image: exSaas },
-            { tag: "Fintech",    title: "PayWave",  image: exFintech },
-            { tag: "E-commerce", title: "kart9",    image: exShop },
-            { tag: "Health",     title: "Medico",   image: exHealth },
+            { tag: "Dating", title: "Lumr", image: exDating },
+            { tag: "Delivery", title: "ZipEats", image: exDelivery },
+            { tag: "SaaS", title: "Metricly", image: exSaas },
+            { tag: "Fintech", title: "PayWave", image: exFintech },
+            { tag: "E-commerce", title: "kart9", image: exShop },
+            { tag: "Health", title: "Medico", image: exHealth },
           ];
           const loop = [...PREVIEWS, ...PREVIEWS];
           return (
@@ -174,7 +198,9 @@ function LandingPage() {
                       </div>
                     </div>
                     <div className="px-4 py-3 flex items-center justify-between">
-                      <span className="font-display font-semibold group-hover:text-primary transition-colors">{p.title}</span>
+                      <span className="font-display font-semibold group-hover:text-primary transition-colors">
+                        {p.title}
+                      </span>
                       <span className="text-[10px] font-mono text-muted-foreground">7 docs</span>
                     </div>
                   </Link>
@@ -188,7 +214,6 @@ function LandingPage() {
       {/* Features section */}
       <section id="features" className="py-24 border-t border-border/50">
         <div className="mx-auto max-w-6xl px-6">
-
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl md:text-5xl font-bold tracking-tight">
               Not a code generator.
@@ -200,14 +225,38 @@ function LandingPage() {
 
         {(() => {
           const ROW_TOP = [
-            { icon: Brain, title: "Smart clarification", desc: "AI asks 6–8 sharp questions to understand your idea before generating anything." },
-            { icon: Layers, title: "Stack recommender", desc: "Get a tailored stack — frontend, backend, DB, auth — with rationale you can override." },
-            { icon: FileCode, title: "7 structured docs", desc: "PRD, SRS, Architecture, Design System, API Spec, Folder Structure, README." },
+            {
+              icon: Brain,
+              title: "Smart clarification",
+              desc: "AI asks 6–8 sharp questions to understand your idea before generating anything.",
+            },
+            {
+              icon: Layers,
+              title: "Stack recommender",
+              desc: "Get a tailored stack — frontend, backend, DB, auth — with rationale you can override.",
+            },
+            {
+              icon: FileCode,
+              title: "7 structured docs",
+              desc: "PRD, SRS, Architecture, Design System, API Spec, Folder Structure, README.",
+            },
           ];
           const ROW_BOTTOM = [
-            { icon: Zap, title: "Minutes, not days", desc: "Skip days of doc-writing. Get a complete project package in under 5 minutes." },
-            { icon: Sparkles, title: "Production-ready", desc: "Outputs are detailed enough to feed directly into your AI coding assistant." },
-            { icon: Download, title: "Export as ZIP", desc: "Download the entire project folder. GitHub push coming soon." },
+            {
+              icon: Zap,
+              title: "Minutes, not days",
+              desc: "Skip days of doc-writing. Get a complete project package in under 5 minutes.",
+            },
+            {
+              icon: Sparkles,
+              title: "Production-ready",
+              desc: "Outputs are detailed enough to feed directly into your AI coding assistant.",
+            },
+            {
+              icon: Download,
+              title: "Export as ZIP",
+              desc: "Download the entire project folder. GitHub push coming soon.",
+            },
           ];
 
           const Card = ({ f }: { f: { icon: typeof Brain; title: string; desc: string } }) => (
@@ -227,12 +276,16 @@ function LandingPage() {
             <div className="space-y-5">
               <div className="marquee py-2">
                 <div className="marquee-track">
-                  {top.map((f, i) => <Card key={`t-${i}`} f={f} />)}
+                  {top.map((f, i) => (
+                    <Card key={`t-${i}`} f={f} />
+                  ))}
                 </div>
               </div>
               <div className="marquee py-2">
                 <div className="marquee-track-reverse">
-                  {bottom.map((f, i) => <Card key={`b-${i}`} f={f} />)}
+                  {bottom.map((f, i) => (
+                    <Card key={`b-${i}`} f={f} />
+                  ))}
                 </div>
               </div>
             </div>
@@ -249,13 +302,28 @@ function LandingPage() {
 
           <div className="space-y-4">
             {[
-              ["01", "Drop your idea", "Type a sentence or paste a brief. The vaguer the better — we'll dig in."],
-              ["02", "Answer the AI", "Chat-style flow. 6–8 questions about platform, scale, and intent."],
+              [
+                "01",
+                "Drop your idea",
+                "Type a sentence or paste a brief. The vaguer the better — we'll dig in.",
+              ],
+              [
+                "02",
+                "Answer the AI",
+                "Chat-style flow. 6–8 questions about platform, scale, and intent.",
+              ],
               ["03", "Pick your stack", "AI recommends. You approve or override every choice."],
-              ["04", "Watch it generate", "PRD → Architecture → API → Design — streamed in real time."],
+              [
+                "04",
+                "Watch it generate",
+                "PRD → Architecture → API → Design — streamed in real time.",
+              ],
               ["05", "Download & build", "Grab the ZIP. Hand it to Cursor, Claude, or your team."],
             ].map(([num, title, desc]) => (
-              <div key={num} className="flex gap-6 p-6 rounded-2xl border border-border bg-surface/40 hover:border-primary/30 transition-colors">
+              <div
+                key={num}
+                className="flex gap-6 p-6 rounded-2xl border border-border bg-surface/40 hover:border-primary/30 transition-colors"
+              >
                 <div className="font-mono text-3xl font-bold text-primary shrink-0">{num}</div>
                 <div>
                   <h3 className="font-display font-semibold text-xl mb-1">{title}</h3>
@@ -266,10 +334,7 @@ function LandingPage() {
           </div>
 
           <div className="mt-16 text-center">
-            <Link
-              to="/build"
-              className="btn-3d"
-            >
+            <Link to="/build" className="btn-3d">
               Build your spec now
               <ArrowRight className="w-4 h-4" />
             </Link>

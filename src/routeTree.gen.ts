@@ -11,16 +11,21 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SrsGeneratorRouteImport } from './routes/srs-generator'
+import { Route as SoftwareArchitectureGeneratorRouteImport } from './routes/software-architecture-generator'
 import { Route as RefundRouteImport } from './routes/refund'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PrdGeneratorRouteImport } from './routes/prd-generator'
 import { Route as ExamplesRouteImport } from './routes/examples'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as DesignDocumentGeneratorRouteImport } from './routes/design-document-generator'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as BuildRouteImport } from './routes/build'
 import { Route as BillingRouteImport } from './routes/billing'
+import { Route as ApiDocumentationGeneratorRouteImport } from './routes/api-documentation-generator'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthVerifyRouteImport } from './routes/auth/verify'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
@@ -37,6 +42,17 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SrsGeneratorRoute = SrsGeneratorRouteImport.update({
+  id: '/srs-generator',
+  path: '/srs-generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SoftwareArchitectureGeneratorRoute =
+  SoftwareArchitectureGeneratorRouteImport.update({
+    id: '/software-architecture-generator',
+    path: '/software-architecture-generator',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const RefundRoute = RefundRouteImport.update({
   id: '/refund',
   path: '/refund',
@@ -57,6 +73,11 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrdGeneratorRoute = PrdGeneratorRouteImport.update({
+  id: '/prd-generator',
+  path: '/prd-generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExamplesRoute = ExamplesRouteImport.update({
   id: '/examples',
   path: '/examples',
@@ -65,6 +86,11 @@ const ExamplesRoute = ExamplesRouteImport.update({
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignDocumentGeneratorRoute = DesignDocumentGeneratorRouteImport.update({
+  id: '/design-document-generator',
+  path: '/design-document-generator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CookiesRoute = CookiesRouteImport.update({
@@ -87,6 +113,12 @@ const BillingRoute = BillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDocumentationGeneratorRoute =
+  ApiDocumentationGeneratorRouteImport.update({
+    id: '/api-documentation-generator',
+    path: '/api-documentation-generator',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -115,16 +147,21 @@ const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api-documentation-generator': typeof ApiDocumentationGeneratorRoute
   '/billing': typeof BillingRoute
   '/build': typeof BuildRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
+  '/design-document-generator': typeof DesignDocumentGeneratorRoute
   '/docs': typeof DocsRoute
   '/examples': typeof ExamplesRoute
+  '/prd-generator': typeof PrdGeneratorRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/refund': typeof RefundRoute
+  '/software-architecture-generator': typeof SoftwareArchitectureGeneratorRoute
+  '/srs-generator': typeof SrsGeneratorRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -134,16 +171,21 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api-documentation-generator': typeof ApiDocumentationGeneratorRoute
   '/billing': typeof BillingRoute
   '/build': typeof BuildRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
+  '/design-document-generator': typeof DesignDocumentGeneratorRoute
   '/docs': typeof DocsRoute
   '/examples': typeof ExamplesRoute
+  '/prd-generator': typeof PrdGeneratorRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/refund': typeof RefundRoute
+  '/software-architecture-generator': typeof SoftwareArchitectureGeneratorRoute
+  '/srs-generator': typeof SrsGeneratorRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -154,16 +196,21 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api-documentation-generator': typeof ApiDocumentationGeneratorRoute
   '/billing': typeof BillingRoute
   '/build': typeof BuildRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
+  '/design-document-generator': typeof DesignDocumentGeneratorRoute
   '/docs': typeof DocsRoute
   '/examples': typeof ExamplesRoute
+  '/prd-generator': typeof PrdGeneratorRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/refund': typeof RefundRoute
+  '/software-architecture-generator': typeof SoftwareArchitectureGeneratorRoute
+  '/srs-generator': typeof SrsGeneratorRoute
   '/terms': typeof TermsRoute
   '/welcome': typeof WelcomeRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -175,16 +222,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api-documentation-generator'
     | '/billing'
     | '/build'
     | '/contact'
     | '/cookies'
+    | '/design-document-generator'
     | '/docs'
     | '/examples'
+    | '/prd-generator'
     | '/pricing'
     | '/privacy'
     | '/profile'
     | '/refund'
+    | '/software-architecture-generator'
+    | '/srs-generator'
     | '/terms'
     | '/welcome'
     | '/auth/callback'
@@ -194,16 +246,21 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api-documentation-generator'
     | '/billing'
     | '/build'
     | '/contact'
     | '/cookies'
+    | '/design-document-generator'
     | '/docs'
     | '/examples'
+    | '/prd-generator'
     | '/pricing'
     | '/privacy'
     | '/profile'
     | '/refund'
+    | '/software-architecture-generator'
+    | '/srs-generator'
     | '/terms'
     | '/welcome'
     | '/auth/callback'
@@ -213,16 +270,21 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/api-documentation-generator'
     | '/billing'
     | '/build'
     | '/contact'
     | '/cookies'
+    | '/design-document-generator'
     | '/docs'
     | '/examples'
+    | '/prd-generator'
     | '/pricing'
     | '/privacy'
     | '/profile'
     | '/refund'
+    | '/software-architecture-generator'
+    | '/srs-generator'
     | '/terms'
     | '/welcome'
     | '/auth/callback'
@@ -233,16 +295,21 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiDocumentationGeneratorRoute: typeof ApiDocumentationGeneratorRoute
   BillingRoute: typeof BillingRoute
   BuildRoute: typeof BuildRoute
   ContactRoute: typeof ContactRoute
   CookiesRoute: typeof CookiesRoute
+  DesignDocumentGeneratorRoute: typeof DesignDocumentGeneratorRoute
   DocsRoute: typeof DocsRoute
   ExamplesRoute: typeof ExamplesRoute
+  PrdGeneratorRoute: typeof PrdGeneratorRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   RefundRoute: typeof RefundRoute
+  SoftwareArchitectureGeneratorRoute: typeof SoftwareArchitectureGeneratorRoute
+  SrsGeneratorRoute: typeof SrsGeneratorRoute
   TermsRoute: typeof TermsRoute
   WelcomeRoute: typeof WelcomeRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -265,6 +332,20 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/srs-generator': {
+      id: '/srs-generator'
+      path: '/srs-generator'
+      fullPath: '/srs-generator'
+      preLoaderRoute: typeof SrsGeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/software-architecture-generator': {
+      id: '/software-architecture-generator'
+      path: '/software-architecture-generator'
+      fullPath: '/software-architecture-generator'
+      preLoaderRoute: typeof SoftwareArchitectureGeneratorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/refund': {
@@ -295,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prd-generator': {
+      id: '/prd-generator'
+      path: '/prd-generator'
+      fullPath: '/prd-generator'
+      preLoaderRoute: typeof PrdGeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/examples': {
       id: '/examples'
       path: '/examples'
@@ -307,6 +395,13 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-document-generator': {
+      id: '/design-document-generator'
+      path: '/design-document-generator'
+      fullPath: '/design-document-generator'
+      preLoaderRoute: typeof DesignDocumentGeneratorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cookies': {
@@ -335,6 +430,13 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/billing'
       preLoaderRoute: typeof BillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api-documentation-generator': {
+      id: '/api-documentation-generator'
+      path: '/api-documentation-generator'
+      fullPath: '/api-documentation-generator'
+      preLoaderRoute: typeof ApiDocumentationGeneratorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -377,16 +479,21 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiDocumentationGeneratorRoute: ApiDocumentationGeneratorRoute,
   BillingRoute: BillingRoute,
   BuildRoute: BuildRoute,
   ContactRoute: ContactRoute,
   CookiesRoute: CookiesRoute,
+  DesignDocumentGeneratorRoute: DesignDocumentGeneratorRoute,
   DocsRoute: DocsRoute,
   ExamplesRoute: ExamplesRoute,
+  PrdGeneratorRoute: PrdGeneratorRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   RefundRoute: RefundRoute,
+  SoftwareArchitectureGeneratorRoute: SoftwareArchitectureGeneratorRoute,
+  SrsGeneratorRoute: SrsGeneratorRoute,
   TermsRoute: TermsRoute,
   WelcomeRoute: WelcomeRoute,
   AuthCallbackRoute: AuthCallbackRoute,

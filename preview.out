@@ -1,0 +1,45 @@
+
+> preview
+> vite preview --host 127.0.0.1 --port 4174
+
+
+ [37m╭[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m [Build Info] [39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m╮[39m
+ [37m│[39m                                    [37m│[39m
+ [37m│[39m  - Build Directory: [36m.output[39m        [37m│[39m
+ [37m│[39m  - Date: 3/7/2026, 10:06:53 pm     [37m│[39m
+ [37m│[39m  - Nitro Version: 3.0.260603-beta  [37m│[39m
+ [37m│[39m  - Nitro Preset: node-server       [37m│[39m
+ [37m│[39m                                    [37m│[39m
+ [37m╰[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m╯[39m
+
+
+ [37m╭[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m [Environment Variables] [39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m╮[39m
+ [37m│[39m                                                         [37m│[39m
+ [37m│[39m  Loaded variables from .env files (preview mode only).  [37m│[39m
+ [37m│[39m  Set platform environment variables for production:     [37m│[39m
+ [37m│[39m   - GEMINI_API_KEY                                      [37m│[39m
+ [37m│[39m   - GOOGLE_CLIENT_ID                                    [37m│[39m
+ [37m│[39m   - GOOGLE_CLIENT_SECRET                                [37m│[39m
+ [37m│[39m   - GOOGLE_REDIRECT_URI                                 [37m│[39m
+ [37m│[39m   - OPENAI_API_KEY                                      [37m│[39m
+ [37m│[39m   - OPENROUTER_ANOTHER_API_KEY                          [37m│[39m
+ [37m│[39m   - OPENROUTER_API_KEY                                  [37m│[39m
+ [37m│[39m   - PORT                                                [37m│[39m
+ [37m│[39m   - RAZORPAY_CUSTOM_AMOUNT_INR                          [37m│[39m
+ [37m│[39m   - RAZORPAY_ENTERPRISE_AMOUNT_INR                      [37m│[39m
+ [37m│[39m   - RAZORPAY_KEY_ID                                     [37m│[39m
+ [37m│[39m   - RAZORPAY_KEY_SECRET                                 [37m│[39m
+ [37m│[39m   - RAZORPAY_PRO_AMOUNT_INR                             [37m│[39m
+ [37m│[39m   - VITE_APP_URL                                        [37m│[39m
+ [37m│[39m   - VITE_BILLING_UPI_ID                                 [37m│[39m
+ [37m│[39m   - VITE_BILLING_UPI_NAME                               [37m│[39m
+ [37m│[39m   - VITE_INSFORGE_ANON_KEY                              [37m│[39m
+ [37m│[39m   - VITE_INSFORGE_BASE_URL                              [37m│[39m
+ [37m│[39m   - VITE_RAZORPAY_CUSTOM_AMOUNT_INR                     [37m│[39m
+ [37m│[39m   - VITE_RAZORPAY_ENTERPRISE_AMOUNT_INR                 [37m│[39m
+ [37m│[39m   - VITE_RAZORPAY_PRO_AMOUNT_INR                        [37m│[39m
+ [37m│[39m                                                         [37m│[39m
+ [37m╰[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m─[39m[37m╯[39m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m4174[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m

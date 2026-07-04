@@ -102,15 +102,20 @@ function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <HeadContent />
-        <link rel="canonical" href={canonical} />
-        <meta property="og:url" content={canonical} />
-        <meta property="og:site_name" content="PLANNR" />
-        <meta name="twitter:site" content="@plannrdev" />
-        <meta name="robots" content={getRobotsContent(pathname)} />
-        <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
-        <script type="application/ld+json">{JSON.stringify(softwareApplicationSchema)}</script>
-      </head>
+      <HeadContent />
+      <link rel="canonical" href={canonical} />
+      <meta property="og:url" content={canonical} />
+      <meta property="og:site_name" content="PLANNR" />
+      <meta name="twitter:site" content="@plannrdev" />
+      <meta name="robots" content={getRobotsContent(pathname)} />
+      <script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2985848646146180"
+        crossOrigin="anonymous"
+      ></script>
+      <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
+      <script type="application/ld+json">{JSON.stringify(softwareApplicationSchema)}</script>
+    </head>
       <body>
         {children}
         <Scripts />

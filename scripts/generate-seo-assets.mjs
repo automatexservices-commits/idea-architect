@@ -18,6 +18,11 @@ const PUBLIC_ROUTES = [
   "/cookies",
   "/contact",
   "/refund",
+  "/prd-generator",
+  "/srs-generator",
+  "/api-documentation-generator",
+  "/software-architecture-generator",
+  "/design-document-generator",
 ];
 
 function escapeXml(value) {

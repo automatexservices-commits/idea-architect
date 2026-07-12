@@ -36,4 +36,24 @@
     <loc>https://plannr.in/refund</loc>
     <lastmod>2026-07-12</lastmod>
   </url>
+  <url>
+    <loc>https://plannr.in/prd-generator</loc>
+    <lastmod>2026-07-12</lastmod>
+  </url>
+  <url>
+    <loc>https://plannr.in/srs-generator</loc>
+    <lastmod>2026-07-12</lastmod>
+  </url>
+  <url>
+    <loc>https://plannr.in/api-documentation-generator</loc>
+    <lastmod>2026-07-12</lastmod>
+  </url>
+  <url>
+    <loc>https://plannr.in/software-architecture-generator</loc>
+    <lastmod>2026-07-12</lastmod>
+  </url>
+  <url>
+    <loc>https://plannr.in/design-document-generator</loc>
+    <lastmod>2026-07-12</lastmod>
+  </url>
 </urlset>

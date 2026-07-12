@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, CreditCard, FileDown, Sparkles } from "lucide-react";
 
@@ -88,7 +88,8 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const { session } = useAuth();
+  const navigate = useNavigate();
+  const { session, loading: authLoading } = useAuth();
   const [history, setHistory] = useState<HistoryItem[] | null>(null);
   const [billing, setBilling] = useState<BillingDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,6 +99,19 @@ function ProfilePage() {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
+    if (authLoading) {
+      return () => {
+        mounted = false;
+      };
+    }
+
+    if (!session?.accessToken) {
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
     void (async () => {
       try {
         const [h, b] = await Promise.all([
@@ -117,7 +131,18 @@ function ProfilePage() {
     return () => {
       mounted = false;
     };
-  }, [session?.accessToken]);
+  }, [authLoading, session?.accessToken]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!session?.accessToken) {
+      navigate({ to: "/welcome", search: { mode: "login" }, replace: true });
+    }
+  }, [authLoading, navigate, session?.accessToken]);
+
+  if (authLoading || !session?.accessToken) {
+    return <div className="min-h-screen bg-background" aria-busy="true" aria-live="polite" />;
+  }
 
   const handleDownload = async (item: HistoryItem) => {
     try {

@@ -313,7 +313,7 @@ const DOC_FILES = [
 
 function BuildPage() {
   const navigate = useNavigate();
-  const { user, session } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [step, setStep] = useState<Step>("idea");
   const [idea, setIdea] = useState("");
   const [specs, setSpecs] = useState("");
@@ -331,6 +331,13 @@ function BuildPage() {
   const [limitDialog, setLimitDialog] = useState<LimitDialogState | null>(null);
 
   const genQuestions = useServerFn(generateQuestions);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!session?.accessToken || !user) {
+      navigate({ to: "/welcome", search: { mode: "login" }, replace: true });
+    }
+  }, [authLoading, navigate, session?.accessToken, user]);
 
   const openLimitDialog = (state: LimitDialogState) => {
     setShowAuthDialog(false);
@@ -579,6 +586,10 @@ function BuildPage() {
       // Completion acknowledgement is best-effort and idempotent.
     });
   }, [step, projectId, docs.folderStructure, session?.accessToken, user]);
+
+  if (authLoading || !session?.accessToken || !user) {
+    return <div className="min-h-screen bg-background" aria-busy="true" aria-live="polite" />;
+  }
 
   const downloadZip = async () => {
     const zip = new JSZip();

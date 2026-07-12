@@ -173,16 +173,16 @@ function RootComponent() {
           pointerEvents: "none",
         }}
       />
-      <AuthGate>
-        {showIntroChrome ? <SplashIntro /> : null}
-        {showInteractiveGrid ? <InteractiveGrid /> : null}
-        <div className="relative z-10">
-          <Outlet />
-        </div>
-      </AuthGate>
-    </AuthProvider>
-  );
-}
+        <>
+          {showIntroChrome ? <SplashIntro /> : null}
+          {showInteractiveGrid ? <InteractiveGrid /> : null}
+          <div className="relative z-10">
+            <Outlet />
+          </div>
+        </>
+      </AuthProvider>
+    );
+  }
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { loading } = useAuth();

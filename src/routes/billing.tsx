@@ -46,7 +46,7 @@ export const Route = createFileRoute("/billing")({
 
 function BillingDashboardPage() {
   const navigate = useNavigate();
-  const { user, session } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [billing, setBilling] = useState<BillingDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyPlan, setBusyPlan] = useState<PricingPlanId | null>(null);
@@ -63,6 +63,13 @@ function BillingDashboardPage() {
   }, [user]);
 
   const email = user?.email ?? "guest@plannr.app";
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!session?.accessToken) {
+      navigate({ to: "/welcome", search: { mode: "login" }, replace: true });
+    }
+  }, [authLoading, navigate, session?.accessToken]);
 
   useEffect(() => {
     let mounted = true;
@@ -100,6 +107,10 @@ function BillingDashboardPage() {
       mounted = false;
     };
   }, [session?.accessToken]);
+
+  if (authLoading || !session?.accessToken) {
+    return <div className="min-h-screen bg-background" aria-busy="true" aria-live="polite" />;
+  }
 
   const currentPlan = billing?.summary.currentPlan ?? (session?.user ? "Hobby" : "Guest");
   const totalSpent = `Rs ${(billing?.summary.totalSpentInInr ?? 0).toFixed(2)}`;

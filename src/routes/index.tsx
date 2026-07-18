@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Sparkles, FileCode, Layers, Download, Brain, Zap } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -43,6 +44,12 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
+  const [copies, setCopies] = useState(1);
+
+  useEffect(() => {
+    setCopies(4);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
@@ -269,22 +276,38 @@ function LandingPage() {
             </div>
           );
 
-          const top = [...ROW_TOP, ...ROW_TOP, ...ROW_TOP, ...ROW_TOP];
-          const bottom = [...ROW_BOTTOM, ...ROW_BOTTOM, ...ROW_BOTTOM, ...ROW_BOTTOM];
+          const top = Array.from({ length: copies }, () => ROW_TOP);
+          const bottom = Array.from({ length: copies }, () => ROW_BOTTOM);
 
           return (
             <div className="space-y-5">
               <div className="marquee py-2">
                 <div className="marquee-track">
-                  {top.map((f, i) => (
-                    <Card key={`t-${i}`} f={f} />
+                  {top.map((copy, copyIndex) => (
+                    <div
+                      key={`t-copy-${copyIndex}`}
+                      className="contents"
+                      aria-hidden={copyIndex > 0 ? "true" : undefined}
+                    >
+                      {copy.map((f, i) => (
+                        <Card key={`t-${copyIndex}-${i}`} f={f} />
+                      ))}
+                    </div>
                   ))}
                 </div>
               </div>
               <div className="marquee py-2">
                 <div className="marquee-track-reverse">
-                  {bottom.map((f, i) => (
-                    <Card key={`b-${i}`} f={f} />
+                  {bottom.map((copy, copyIndex) => (
+                    <div
+                      key={`b-copy-${copyIndex}`}
+                      className="contents"
+                      aria-hidden={copyIndex > 0 ? "true" : undefined}
+                    >
+                      {copy.map((f, i) => (
+                        <Card key={`b-${copyIndex}-${i}`} f={f} />
+                      ))}
+                    </div>
                   ))}
                 </div>
               </div>

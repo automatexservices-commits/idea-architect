@@ -1,4 +1,5 @@
-# {{title}}
+# {{title}} 
+  {{Project name}}
 
 ## 0. Metadata
 - Author: {{author}}
